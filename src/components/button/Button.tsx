@@ -1,7 +1,7 @@
 import React, { forwardRef, ComponentPropsWithoutRef } from "react";
 import styles from "./style/Button.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 
 export type ButtonProps = ComponentPropsWithoutRef<"button"> & {
   text?: string;

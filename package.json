@@ -1,6 +1,6 @@
 {
   "name": "react-magic-ui",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A React component library for building magical user interfaces with liquid glass effect",
   "author": "@tweeedlex",
   "license": "MIT",
@@ -8,6 +8,20 @@
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/index.d.ts"]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js",
+      "default": "./dist/index.es.js"
+    },
+    "./dist/react-magic-ui.css": "./dist/react-magic-ui.css"
+  },
   "files": [
     "/dist"
   ],
@@ -31,7 +45,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "format": "prettier --write --parser typescript '**/*.{ts,tsx}'",
     "lint": "eslint . --ext .ts,.tsx --ignore-path .gitignore --fix",

@@ -1,6 +1,6 @@
 import React, { ChangeEventHandler } from "react";
-import { cn } from "../../func.ts";
-import Glass from "../glass/Glass.tsx";
+import { cn } from "../../func";
+import Glass from "../glass/Glass";
 import styles from "./style/Input.module.scss";
 
 export type InputProps = {

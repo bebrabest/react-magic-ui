@@ -1,7 +1,7 @@
 import React from "react";
-import { cn } from "../../func.ts";
+import { cn } from "../../func";
 import styles from "./style/Card.module.scss";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 
 export type CardProps = {
   children?: React.ReactNode | string;

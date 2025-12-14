@@ -1,1 +1,2 @@
-export { default as Button } from './Button.tsx';
+export { default as Button } from './Button';
+export type { ButtonProps } from './Button';

@@ -1,7 +1,7 @@
 import React from "react";
 import clsx from "clsx";
 import styles from "./style/Badge.module.scss";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 
 export type BadgeVariant =
   | "default"

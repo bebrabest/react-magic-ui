@@ -10,8 +10,8 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "../../func.ts";
-import Glass from "../glass/Glass.tsx";
+import { cn } from "../../func";
+import Glass from "../glass/Glass";
 import styles from "./style/Toast.module.scss";
 
 type ToastVariant = "default" | "success" | "error" | "info";

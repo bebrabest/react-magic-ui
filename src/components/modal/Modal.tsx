@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "../../func.ts";
+import { cn } from "../../func";
 import { Glass } from "../glass";
 import styles from "./style/Modal.module.scss";
 

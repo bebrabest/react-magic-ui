@@ -1,2 +1,2 @@
-export { default as Checkbox } from './Checkbox.tsx';
-export type { CheckboxProps } from './Checkbox.tsx';
+export { default as Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';

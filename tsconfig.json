@@ -8,7 +8,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler", // Specifies how modules are resolved when bundling.
-    "allowImportingTsExtensions": true, // Allows importing TypeScript files with extensions.
+    "allowImportingTsExtensions": false, // Disallows importing TypeScript files with extensions.
     "resolveJsonModule": true, // Enables importing JSON modules.
     "isolatedModules": true, // Ensures each file is treated as a separate module.
     "noEmit": true, // Prevents TypeScript from emitting output files.
@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true, // Requires handling all cases in a switch statement.
     "declaration": true, // Generates declaration files for TypeScript.
   },
-  "include": ["src/**/*.ts"], // Specifies the directory to include when searching for TypeScript files.
+  "include": ["src/**/*.ts", "src/**/*.tsx"], // Specifies the directory to include when searching for TypeScript files.
   "exclude": [
     "src/**/__docs__","src/**/__test__"
   ]

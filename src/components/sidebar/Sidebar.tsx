@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 import clsx from "clsx";
 import styles from "./style/Sidebar.module.scss";
 
@@ -36,14 +36,11 @@ const useSidebarContext = (component: string) => {
   return context;
 };
 
-
-
 export type SidebarProps = ComponentPropsWithoutRef<"aside"> & {
   size?: SidebarSize;
   collapsed?: boolean;
   defaultCollapsed?: boolean;
   collapsible?: boolean;
-  enableLiquidAnimation?: boolean;
   onToggle?: (collapsed: boolean) => void;
   activeItemId?: string;
   defaultActiveItemId?: string;
@@ -60,7 +57,6 @@ const SidebarBase = forwardRef<HTMLElement, SidebarProps>(
       collapsed: collapsedProp,
       defaultCollapsed = false,
       collapsible = false,
-      enableLiquidAnimation = true,
       onToggle,
       activeItemId: activeItemIdProp,
       defaultActiveItemId,

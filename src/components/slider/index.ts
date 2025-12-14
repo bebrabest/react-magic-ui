@@ -1,2 +1,2 @@
-export { default as Slider } from './Slider.tsx';
-export type { SliderProps } from './Slider.tsx';
+export { default as Slider } from './Slider';
+export type { SliderProps } from './Slider';

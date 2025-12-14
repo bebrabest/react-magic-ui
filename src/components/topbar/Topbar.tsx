@@ -5,8 +5,8 @@ import React, {
   useContext,
   useMemo,
 } from "react";
-import { cn } from "../../func.ts";
-import Glass from "../glass/Glass.tsx";
+import { cn } from "../../func";
+import Glass from "../glass/Glass";
 import styles from "./style/Topbar.module.scss";
 
 type TopbarSize = "compact" | "comfortable" | "spacious";
@@ -242,5 +242,4 @@ Topbar.Divider = TopbarDivider;
 Topbar.useTopbar = () => useTopbarContext("Topbar.useTopbar");
 
 export default Topbar;
-
 

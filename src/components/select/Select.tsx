@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./style/Select.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 
 export type SelectOption = {
     value: string;

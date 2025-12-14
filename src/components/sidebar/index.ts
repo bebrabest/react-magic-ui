@@ -1,2 +1,2 @@
-export { default as Sidebar } from './Sidebar.tsx';
-
+export { default as Sidebar } from './Sidebar';
+export type * from "./Sidebar";

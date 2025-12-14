@@ -9,9 +9,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { cn } from "../../func.ts";
-import Glass from "../glass/Glass.tsx";
-import Button from "../button/Button.tsx";
+import { cn } from "../../func";
+import Glass from "../glass/Glass";
+import Button from "../button/Button";
 import styles from "./style/Tabs.module.scss";
 
 type TabsOrientation = "horizontal" | "vertical";

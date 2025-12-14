@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./style/Checkbox.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass.tsx";
+import Glass from "../glass/Glass";
 
 export type CheckboxProps = {
     disabled?: boolean;

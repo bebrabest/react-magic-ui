@@ -19,7 +19,15 @@ export default defineConfig({
     cssCodeSplit: false,
   },
   plugins: [
-    dts()],
+    dts({
+      tsconfigPath: './tsconfig.build.json',
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/**/__docs__', 'src/**/__test__', '**/*.test.ts', '**/*.test.tsx', '**/*.stories.ts', '**/*.stories.tsx'],
+      rollupTypes: true,
+      copyDtsFiles: false,
+      insertTypesEntry: true,
+    })
+  ],
   test: {
     globals: true,
     environment: "jsdom",

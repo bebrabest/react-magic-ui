@@ -1,2 +1,2 @@
-export { ToastProvider, useToast } from "./ToastProvider.tsx";
-export type { ToastProviderProps, ToastDefinition } from "./ToastProvider.tsx";
+export { ToastProvider, useToast } from "./ToastProvider";
+export type * from "./ToastProvider";
