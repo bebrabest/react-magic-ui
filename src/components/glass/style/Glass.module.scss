@@ -24,6 +24,7 @@
 
 .glassFilter {
     position: absolute;
+    border-radius: 8px;
     inset: 0;
     z-index: 0;
     backdrop-filter: blur(2px);
