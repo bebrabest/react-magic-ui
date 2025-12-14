@@ -1,5 +1,7 @@
 import { defineConfig } from "vitest/config";
 import dts from "vite-plugin-dts";
+import { rmSync } from "fs";
+import { join } from "path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { dependencies:  peerDependencies } =  require('./package.json')
 
@@ -26,7 +28,16 @@ export default defineConfig({
       rollupTypes: true,
       copyDtsFiles: false,
       insertTypesEntry: true,
-    })
+    }),
+    {
+      name: 'remove-demo-assets',
+      closeBundle() {
+        try {
+          const demoPath = join(process.cwd(), 'dist', 'assets', 'demo.png');
+          rmSync(demoPath, { force: true });
+        } catch { /* empty */ }
+      },
+    },
   ],
   test: {
     globals: true,
