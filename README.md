@@ -10,7 +10,6 @@ A React component library for creating stunning liquid glass effect UI component
 
 ![Screenshot](https://raw.githubusercontent.com/tweeedlex/react-magic-ui/main/public/assets/demo.png)
 
-## Installation
 ### [🚀 Live demo](https://magic-ui-demo.tappers.tech)
 Here you can mess with the components. Enjoy!
 
