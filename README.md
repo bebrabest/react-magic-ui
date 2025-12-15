@@ -82,6 +82,9 @@ function App() {
 
 >  ⚠️ NOTE: Safari and Firefox only partially support the effect (displacement will not be visible)
 
+## Featured In
+- 📰 [[Medium] JavaScript in Plain English](https://javascript.plainenglish.io/react-magic-ui-e4289a3a0e8b)
+
 ## Development
 
 ```bash
