@@ -1,13 +1,10 @@
-import React, { ChangeEventHandler } from "react";
+import React, { ComponentPropsWithoutRef } from "react";
 import { cn } from "../../func";
 import Glass from "../glass/Glass";
 import styles from "./style/Input.module.scss";
 
-export type InputProps = {
-  disabled?: boolean;
+export type InputProps = Omit<ComponentPropsWithoutRef<"input">, "size"> & {
   size?: "small" | "medium" | "large";
-  placeholder?: string;
-  onChange?: ChangeEventHandler<HTMLInputElement>;
   enableClickAnimation?: boolean;
 };
 

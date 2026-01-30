@@ -10,7 +10,7 @@ import React, {
   useState,
 } from "react";
 import { cn } from "../../func";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 import Button from "../button/Button";
 import styles from "./style/Tabs.module.scss";
 
@@ -58,7 +58,7 @@ export type TabsProps = ComponentPropsWithoutRef<"div"> & {
   onValueChange?: (next: string) => void;
   activationMode?: TabsActivationMode;
   orientation?: TabsOrientation;
-};
+} & GlassProps;
 
 const TabsBase = forwardRef<HTMLDivElement, TabsProps>(
   (
@@ -234,150 +234,108 @@ const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const {
       value: selectedValue,
       setValue,
-      deactivate,
-      activationMode,
       orientation,
+      isControlled,
       registerTrigger,
       unregisterTrigger,
       updateTriggerDisabled,
-      focusValue,
-      getEnabledTriggerValues,
       getTriggerId,
       getContentId,
-      isControlled,
+      getEnabledTriggerValues,
+      focusValue,
     } = useTabsContext("Tabs.Trigger");
 
-    const isSelected = selectedValue === value;
     const triggerId = getTriggerId(value);
     const contentId = getContentId(value);
+    const isSelected = selectedValue === value;
 
-    const handleSelect = useCallback(() => {
-      if (disabled) {
-        return;
-      }
-
+    const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+      if (disabled) return;
       setValue(value);
-    }, [disabled, setValue, value]);
-
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
-      if (event.defaultPrevented) {
-        return;
-      }
-      handleSelect();
-    };
+    }, [disabled, onClick, setValue, value]);
 
-    const moveFocus = useCallback(
-      (direction: 1 | -1) => {
+    const handleFocus = useCallback((event: React.FocusEvent<HTMLButtonElement>) => {
+      // Focus the trigger when tabbing in from outside the tab list
+      if (event.target === event.currentTarget) {
         const enabledValues = getEnabledTriggerValues();
-        if (enabledValues.length === 0) {
-          return;
-        }
-
         const currentIndex = enabledValues.indexOf(value);
-        const fallbackIndex = Math.max(0, Math.min(enabledValues.length - 1, currentIndex));
-        const startIndex = currentIndex === -1 ? fallbackIndex : currentIndex;
+        if (currentIndex === -1) return;
+        
+        const triggerElement = document.getElementById(triggerId);
+        if (triggerElement) {
+          triggerElement.focus();
+        }
+      }
+      onFocus?.(event);
+    }, [getEnabledTriggerValues, onFocus, triggerId, value]);
 
-        let nextIndex = startIndex + direction;
-
+    const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+      onKeyDown?.(event);
+      
+      if (event.defaultPrevented) return;
+      
+      const enabledValues = getEnabledTriggerValues();
+      if (enabledValues.length === 0) return;
+      
+      const currentIndex = enabledValues.indexOf(value);
+      if (currentIndex === -1) return;
+      
+      const moveFocus = (direction: 1 | -1) => {
+        let nextIndex = currentIndex + direction;
+        
+        // Wrap around if needed
         if (nextIndex < 0) {
           nextIndex = enabledValues.length - 1;
-        }
-
-        if (nextIndex >= enabledValues.length) {
+        } else if (nextIndex >= enabledValues.length) {
           nextIndex = 0;
         }
-
-        const nextValue = enabledValues[nextIndex];
-
-        if (nextValue) {
-          focusValue(nextValue);
-          deactivate(nextValue);
-        }
-      },
-      [deactivate, focusValue, getEnabledTriggerValues, value],
-    );
-
-    const moveToEdge = useCallback(
-      (edge: "start" | "end") => {
-        const enabledValues = getEnabledTriggerValues();
-        if (enabledValues.length === 0) {
-          return;
-        }
-
-        const edgeValue = edge === "start" ? enabledValues[0] : enabledValues[enabledValues.length - 1];
-
-        if (edgeValue) {
-          focusValue(edgeValue);
-          deactivate(edgeValue);
-        }
-      },
-      [deactivate, focusValue, getEnabledTriggerValues],
-    );
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      onKeyDown?.(event);
-
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      const isHorizontal = orientation === "horizontal";
-
+        
+        focusValue(enabledValues[nextIndex]);
+      };
+      
       switch (event.key) {
-        case "ArrowRight":
-          if (isHorizontal) {
-            event.preventDefault();
-            moveFocus(1);
-          }
-          break;
-        case "ArrowLeft":
-          if (isHorizontal) {
+        case 'ArrowLeft':
+          if (orientation === 'horizontal') {
             event.preventDefault();
             moveFocus(-1);
           }
           break;
-        case "ArrowDown":
-          if (!isHorizontal) {
+          
+        case 'ArrowRight':
+          if (orientation === 'horizontal') {
             event.preventDefault();
             moveFocus(1);
           }
           break;
-        case "ArrowUp":
-          if (!isHorizontal) {
+          
+        case 'ArrowUp':
+          if (orientation === 'vertical') {
             event.preventDefault();
             moveFocus(-1);
           }
           break;
-        case "Home":
-          event.preventDefault();
-          moveToEdge("start");
+          
+        case 'ArrowDown':
+          if (orientation === 'vertical') {
+            event.preventDefault();
+            moveFocus(1);
+          }
           break;
-        case "End":
+          
+        case 'Home':
           event.preventDefault();
-          moveToEdge("end");
+          focusValue(enabledValues[0]);
           break;
-        case "Enter":
-        case " ":
+          
+        case 'End':
           event.preventDefault();
-          handleSelect();
-          break;
-        default:
+          focusValue(enabledValues[enabledValues.length - 1]);
           break;
       }
-    };
+    }, [focusValue, getEnabledTriggerValues, onKeyDown, orientation, value]);
 
-    const handleFocus = (event: React.FocusEvent<HTMLButtonElement>) => {
-      onFocus?.(event);
-
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      if (activationMode === "auto" && selectedValue !== value && !disabled) {
-        setValue(value);
-      }
-    };
+    // handleFocus is already defined above with useCallback
 
     const composedRef = useCallback(
       (node: HTMLButtonElement | null) => {

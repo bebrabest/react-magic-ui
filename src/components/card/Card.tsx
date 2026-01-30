@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "../../func";
 import styles from "./style/Card.module.scss";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 
 export type CardProps = {
   children?: React.ReactNode | string;
@@ -9,7 +9,7 @@ export type CardProps = {
   direction?: "column" | "row";
   align?: "center" | "start" | "end";
   justify?: "center" | "start" | "end" | "space-between" | "space-around";
-};
+} & React.HTMLAttributes<HTMLDivElement> & GlassProps;
 
 const Card: React.FC<CardProps> = ({
   children,

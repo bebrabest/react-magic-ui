@@ -1,7 +1,7 @@
 import React from "react";
 import clsx from "clsx";
 import styles from "./style/Badge.module.scss";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 
 export type BadgeVariant =
   | "default"
@@ -16,7 +16,7 @@ export type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
   variant?: BadgeVariant;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
-};
+} & GlassProps;
 
 const variantBackground = {
   default: "",

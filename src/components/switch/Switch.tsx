@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./styles/Switch.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 
 export type SwitchProps = {
   disabled?: boolean;
@@ -9,7 +9,7 @@ export type SwitchProps = {
   isActive?: boolean;
   enableClickAnimation?: boolean;
   setIsActive?: (isActive: boolean) => void;
-};
+} & GlassProps;
 
 const Switch: React.FC<SwitchProps> = ({
   size = "medium",

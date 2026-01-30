@@ -1,7 +1,7 @@
 import React, { forwardRef, ComponentPropsWithoutRef } from "react";
 import styles from "./style/Button.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 
 export type ButtonProps = ComponentPropsWithoutRef<"button"> & {
   text?: string;
@@ -10,7 +10,7 @@ export type ButtonProps = ComponentPropsWithoutRef<"button"> & {
   size?: "small" | "medium" | "large";
   enableClickAnimation?: boolean;
   rounded?: boolean;
-};
+} & GlassProps<"button">;
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   size = "medium",

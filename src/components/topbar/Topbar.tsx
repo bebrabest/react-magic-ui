@@ -6,7 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { cn } from "../../func";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 import styles from "./style/Topbar.module.scss";
 
 type TopbarSize = "compact" | "comfortable" | "spacious";
@@ -32,7 +32,7 @@ type SectionGap = "tight" | "regular" | "relaxed";
 export type TopbarProps = ComponentPropsWithoutRef<"header"> & {
   size?: TopbarSize;
   elevated?: boolean;
-};
+} & GlassProps;
 
 const TopbarBase = forwardRef<HTMLElement, TopbarProps>(
   ({ size = "comfortable", elevated = true, className, children, ...rest }, ref) => {

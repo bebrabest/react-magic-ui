@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../func";
-import { Glass } from "../glass";
+import { Glass, GlassProps } from "../glass";
 import styles from "./style/Modal.module.scss";
 
 type ModalSize = "sm" | "md" | "lg";
@@ -27,9 +27,7 @@ export type ModalProps = ComponentPropsWithoutRef<"div"> & {
   size?: ModalSize;
   enableLiquidAnimation?: boolean;
   portalContainer?: HTMLElement | null;
-};
-
-
+} & GlassProps;
 
 const Modal: React.FC<ModalProps> = ({
   open,

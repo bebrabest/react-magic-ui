@@ -9,13 +9,13 @@ export type SelectOption = {
 };
 
 export type SelectProps = {
-    disabled?: boolean;
-    size?: "small" | "medium" | "large";
-    options: SelectOption[];
-    value?: string;
-    onChange?: (value: string) => void;
-    placeholder?: string;
-    enableClickAnimation?: boolean;
+  disabled?: boolean;
+  size?: "small" | "medium" | "large";
+  options: SelectOption[];
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  enableClickAnimation?: boolean;
 };
 
 const Select: React.FC<SelectProps> = ({

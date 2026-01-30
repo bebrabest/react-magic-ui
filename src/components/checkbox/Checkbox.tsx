@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./style/Checkbox.module.scss";
 import clsx from "clsx";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 
 export type CheckboxProps = {
     disabled?: boolean;
@@ -10,7 +10,7 @@ export type CheckboxProps = {
     onChange?: (checked: boolean) => void;
     label?: string;
     enableClickAnimation?: boolean;
-};
+} & GlassProps;
 
 const Checkbox: React.FC<CheckboxProps> = ({
     size = "medium",

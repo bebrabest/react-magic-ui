@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import Glass from "../glass/Glass";
+import Glass, { GlassProps } from "../glass/Glass";
 import clsx from "clsx";
 import styles from "./style/Sidebar.module.scss";
 
@@ -48,7 +48,7 @@ export type SidebarProps = ComponentPropsWithoutRef<"aside"> & {
     itemId: string,
     event: React.MouseEvent<HTMLButtonElement>,
   ) => void;
-};
+} & GlassProps;
 
 const SidebarBase = forwardRef<HTMLElement, SidebarProps>(
   (
@@ -110,7 +110,6 @@ const SidebarBase = forwardRef<HTMLElement, SidebarProps>(
       [isActiveControlled, onSelectItem],
     );
 
-
     const contextValue = useMemo<SidebarContextValue>(
       () => ({
         size,
@@ -120,11 +119,20 @@ const SidebarBase = forwardRef<HTMLElement, SidebarProps>(
         handleItemSelect,
         activeItemId,
       }),
-      [size, collapsed, collapsible, handleToggle, handleItemSelect, activeItemId],
+      [
+        size,
+        collapsed,
+        collapsible,
+        handleToggle,
+        handleItemSelect,
+        activeItemId,
+      ],
     );
 
     const widthClass = collapsed ? styles.collapsed : styles[size];
-    const paddingXClass = collapsed ? styles.paddingCollapsed : styles.paddingExpanded;
+    const paddingXClass = collapsed
+      ? styles.paddingCollapsed
+      : styles.paddingExpanded;
 
     return (
       <SidebarContext.Provider value={contextValue}>
@@ -133,11 +141,7 @@ const SidebarBase = forwardRef<HTMLElement, SidebarProps>(
           ref={ref}
           enableLiquidAnimation={false}
           triggerAnimation={false}
-          className={clsx(
-            styles.sidebar,
-            paddingXClass,
-            className,
-          )}
+          className={clsx(styles.sidebar, paddingXClass, className)}
           rootClassName={clsx(widthClass, styles.sidebarRoot)}
           {...rest}
         >
@@ -241,9 +245,8 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
     },
     ref,
   ) => {
-    const { collapsed, handleItemSelect, activeItemId } = useSidebarContext(
-      "Sidebar.Item",
-    );
+    const { collapsed, handleItemSelect, activeItemId } =
+      useSidebarContext("Sidebar.Item");
 
     const { ["aria-label"]: ariaLabelProp, ...restProps } = rest;
 
@@ -259,8 +262,7 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
       onClick?.(event);
     };
 
-    const ariaLabel =
-      typeof children === "string" ? children : ariaLabelProp;
+    const ariaLabel = typeof children === "string" ? children : ariaLabelProp;
 
     return (
       <button
@@ -278,10 +280,7 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
         {...restProps}
       >
         {icon && (
-          <span
-            className={styles.itemIcon}
-            aria-hidden="true"
-          >
+          <span className={styles.itemIcon} aria-hidden="true">
             {icon}
           </span>
         )}
@@ -289,19 +288,12 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
         {!collapsed && (
           <span className={styles.itemContent}>
             <span className={styles.itemText}>{children}</span>
-            {badge && (
-              <span className={styles.itemBadge}>
-                {badge}
-              </span>
-            )}
+            {badge && <span className={styles.itemBadge}>{badge}</span>}
           </span>
         )}
 
         {collapsed && !icon && (
-          <span
-            className={styles.itemFallback}
-            aria-hidden="true"
-          >
+          <span className={styles.itemFallback} aria-hidden="true">
             {getCollapsedFallback(collapsedFallback, children)}
           </span>
         )}
@@ -316,9 +308,8 @@ export type SidebarToggleProps = ComponentPropsWithoutRef<"button">;
 
 const SidebarToggle = forwardRef<HTMLButtonElement, SidebarToggleProps>(
   ({ className, onClick, ...rest }, ref) => {
-    const { collapsible, collapsed, toggleCollapsed } = useSidebarContext(
-      "Sidebar.Toggle",
-    );
+    const { collapsible, collapsed, toggleCollapsed } =
+      useSidebarContext("Sidebar.Toggle");
 
     if (!collapsible) {
       return null;
@@ -333,10 +324,7 @@ const SidebarToggle = forwardRef<HTMLButtonElement, SidebarToggleProps>(
       <button
         ref={ref}
         type="button"
-        className={clsx(
-          styles.sidebarToggle,
-          className,
-        )}
+        className={clsx(styles.sidebarToggle, className)}
         aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
         onClick={handleClick}
         {...rest}
@@ -370,4 +358,3 @@ Sidebar.Toggle = SidebarToggle;
 Sidebar.useSidebar = () => useSidebarContext("Sidebar.useSidebar");
 
 export default Sidebar;
-
