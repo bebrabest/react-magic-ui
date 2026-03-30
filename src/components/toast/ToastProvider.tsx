@@ -1,46 +1,17 @@
-import React, {
-  PropsWithChildren,
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../func";
 import Glass from "../glass/Glass";
+import {
+  ToastContext,
+  type ToastAnimation,
+  type ToastContextValue,
+  type ToastDefinition,
+  type ToastPosition,
+  type ToastProviderProps,
+  type ToastVariant,
+} from "./toast-context";
 import styles from "./style/Toast.module.scss";
-
-type ToastVariant = "default" | "success" | "error" | "info";
-
-type ToastAnimation =
-  | "slide-from-right"
-  | "slide-from-left"
-  | "slide-from-bottom"
-  | "scale";
-
-type ToastPosition =
-  | "top-right"
-  | "top-left"
-  | "top-center"
-  | "bottom-right"
-  | "bottom-left"
-  | "bottom-center";
-
-export type ToastDefinition = {
-  id?: string;
-  title?: ReactNode;
-  description?: ReactNode;
-  variant?: ToastVariant;
-  duration?: number;
-  animation?: ToastAnimation;
-  position?: ToastPosition;
-  enableLiquidAnimation?: boolean;
-  onClose?: () => void;
-};
 
 type ToastRecord = ToastDefinition & {
   id: string;
@@ -53,25 +24,6 @@ type ToastRecord = ToastDefinition & {
   enableLiquidAnimation: boolean;
 };
 
-export type ToastProviderProps = PropsWithChildren<{
-  duration?: number;
-  animation?: ToastAnimation;
-  position?: ToastPosition;
-  enableLiquidAnimation?: boolean;
-  portalContainer?: HTMLElement | null;
-}>;
-
-type ToastContextValue = {
-  showToast: (toast: ToastDefinition) => string;
-  dismissToast: (id: string) => void;
-  clearToasts: () => void;
-  defaults: {
-    duration: number;
-    animation: ToastAnimation;
-    position: ToastPosition;
-    enableLiquidAnimation: boolean;
-  };
-};
 
 const variantClassMap: Record<ToastVariant, string> = {
   default: styles.variantDefault,
@@ -111,8 +63,6 @@ const positionSorts: Record<ToastPosition, "asc" | "desc"> = {
   "bottom-left": "asc",
   "bottom-center": "asc",
 };
-
-const ToastContext = createContext<ToastContextValue | null>(null);
 
 const generateToastId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -189,7 +139,7 @@ const ToastCard: React.FC<{
         clearTimeout(removeTimer.current);
       }
     };
-  }, [animationDurations, onRemove, phase, toast]);
+  }, [onRemove, phase, toast]);
 
   const animationClass = animationClassMap[toast.animation];
 
@@ -249,14 +199,6 @@ const ToastCard: React.FC<{
       </div>
     </Glass>
   );
-};
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within ToastProvider");
-  }
-  return context;
 };
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({

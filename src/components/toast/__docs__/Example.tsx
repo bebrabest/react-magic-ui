@@ -1,5 +1,6 @@
 import { FC } from "react";
-import { ToastProvider, useToast } from "../ToastProvider";
+import { ToastProvider } from "../ToastProvider";
+import { useToast } from "../useToast";
 import Button from "../../button/Button";
 
 const Controls: FC = () => {

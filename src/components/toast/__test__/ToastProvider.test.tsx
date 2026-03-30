@@ -2,7 +2,8 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { ToastProvider, useToast } from "../ToastProvider";
+import { ToastProvider } from "../ToastProvider";
+import { useToast } from "../useToast";
 
 const ToastTrigger: React.FC<{
   onReady?: (api: ReturnType<typeof useToast>) => void;
