@@ -118,6 +118,9 @@ npm run build-storybook
 
 # Validate the real demo app against a packed local tarball
 npm run test:demo-consumer
+
+# Validate the real demo app in a browser after installing the packed tarball
+npm run test:demo-browser-smoke
 ```
 
 For a shorter contributor workflow note, see [`worklog/DEV_FLOW.md`](./worklog/DEV_FLOW.md).

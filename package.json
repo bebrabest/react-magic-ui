@@ -60,7 +60,8 @@
     "build-storybook": "storybook build",
     "visual:snap": "node scripts/visual-storybook-snap.mjs",
     "test:storybook-smoke": "node scripts/storybook-browser-smoke.mjs",
-    "test:demo-consumer": "node scripts/demo-consumer-contract.mjs"
+    "test:demo-consumer": "node scripts/demo-consumer-contract.mjs",
+    "test:demo-browser-smoke": "node scripts/demo-consumer-browser-smoke.mjs"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.2",
