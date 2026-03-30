@@ -6,42 +6,47 @@ import * as Checkbox from "./Checkbox.stories.tsx";
 
 # Checkbox
 
-Checkbox component with different props.
+Glass-styled checkbox control for binary choices, with optional label text and liquid click feedback.
 
-#### Example
+## Example
 
-<Canvas of={Checkbox.Default}/>
+<Canvas of={Checkbox.Default} />
 
 ## Usage
 
-```ts
-import "react-magic-ui/style.css";
-import {Checkbox} from "react-magic-ui";
+```tsx
 import { useState } from "react";
+import "react-magic-ui/style.css";
+import { Checkbox } from "react-magic-ui";
 
-const Example = () => {
+export const Example = () => {
   const [checked, setChecked] = useState(false);
 
   return (
-      <Checkbox
-        size={"medium"}
-        disabled={false}
-        checked={checked}
-        onChange={setChecked}
-        label="Check me!"
-        enableClickAnimation={true}
-      />
+    <Checkbox
+      checked={checked}
+      onChange={setChecked}
+      label="Check me"
+      size="medium"
+    />
   );
 };
-
-export default Example;
 ```
 
-#### Arguments
+## Behavior notes
 
-- **disabled** - A boolean indicating whether the Checkbox should be disabled or not. When disabled, the Checkbox cannot be clicked or interacted with.
-- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the Checkbox.
-- **checked** - A boolean indicating whether the Checkbox is checked or not. When checked, the Checkbox displays a checkmark icon.
-- **onChange** - A function that receives the new checked state as a boolean parameter. It is called when the user toggles the Checkbox.
-- **label** - An optional string that displays a text label next to the Checkbox. When clicked, it toggles the Checkbox state.
-- **enableClickAnimation** - A boolean indicating whether to enable the liquid bounce animation on click
+- `Checkbox` renders as a real button-backed control with `role="checkbox"`, `aria-checked`, and `aria-disabled`
+- when you pass `label`, the text is linked to the control with `aria-labelledby`, and clicking the label toggles the checkbox too
+- `onChange` receives the next boolean state, so the component works cleanly in controlled React flows
+- disabled checkboxes stay visible but ignore interaction
+- the liquid click effect is optional and can be disabled with `enableClickAnimation={false}`
+
+## Props
+
+- **checked** _(`boolean`)_ - current checked state for controlled usage
+- **onChange** _(`(checked: boolean) => void`)_ - called with the next checked state after a user toggle
+- **label** _(`string`)_ - optional visible label rendered next to the control
+- **size** _(`"small" | "medium" | "large"`)_ - adjusts the checkbox dimensions
+- **disabled** _(`boolean`)_ - prevents toggling and exposes disabled semantics to assistive tech
+- **enableClickAnimation** _(`boolean`)_ - enables or disables the liquid click animation
+- **Glass props** - passthrough styling/customization props from the shared `Glass` primitive

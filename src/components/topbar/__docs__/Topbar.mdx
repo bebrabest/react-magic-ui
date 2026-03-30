@@ -6,9 +6,9 @@ import * as TopbarStories from "./Topbar.stories.tsx";
 
 # Topbar
 
-Glassmorphism top navigation bar with compound sections, brand, and action helpers.
+Glass navigation shell for app headers, dashboards, and command surfaces. It exposes a compound API so you can mix brand content, flexible layout sections, and grouped actions without rebuilding the frame each time.
 
-#### Example
+## Example
 
 <Canvas of={TopbarStories.Default} />
 
@@ -16,17 +16,17 @@ Glassmorphism top navigation bar with compound sections, brand, and action helpe
 
 ```tsx
 import "react-magic-ui/style.css";
-import { Topbar, Button, Input } from "react-magic-ui";
+import { Button, Input, Topbar } from "react-magic-ui";
 
 export const Example = () => (
-  <Topbar>
+  <Topbar size="comfortable">
     <Topbar.Brand icon="✨" title="Magic UI" subtitle="Command Center" />
 
     <Topbar.Section grow>
       <Input size="medium" placeholder="Search anything..." />
     </Topbar.Section>
 
-    <Topbar.Actions>
+    <Topbar.Actions aria-label="Workspace actions">
       <Topbar.Divider />
       <Button text="Invite" size="small" />
       <Button text="Share" size="small" variant="link" />
@@ -35,14 +35,22 @@ export const Example = () => (
 );
 ```
 
-#### Arguments
+## Composition notes
 
-- **size** _(`"compact" | "comfortable" | "spacious"`)_ – Controls the height, padding, and typography rhythm.
-- **elevated** _(`boolean`)_ – Toggles the drop shadow for a flatter appearance.
-- **Topbar.Section** _(`{ grow, align, gap, wrap }`)_ – Compose flexible areas, optionally stretching with `grow`.
-- **Topbar.Brand** _(`{ icon, title, subtitle }`)_ – Brand helper that adapts to the current topbar size.
-- **Topbar.Actions** _(`{ gap }`)_ – Right-aligned action container, wraps on smaller widths if needed. If you give it `aria-label`/`aria-labelledby`, it automatically exposes an accessible action group for clustered icon buttons.
-- **Topbar.Divider** _(`void`)_ – Responsive divider that matches the current topbar height.
-- **Topbar.useTopbar()** _(() => TopbarContextValue)_ – Access the active `size` within the component tree.
+- `Topbar` renders through the shared `Glass` primitive and forwards normal header props, so you can treat it like a stylized `<header>` with extra layout helpers
+- `Topbar.Section` handles alignment, spacing, wrapping, and optional growth - use it for search, breadcrumbs, navigation, filters, or any flexible middle area
+- `Topbar.Brand` adapts its icon sizing to the active topbar size and can either render `icon` / `title` / `subtitle` props or fully custom children
+- `Topbar.Actions` is right-aligned by default and automatically adds `role="group"` when you provide `aria-label`, `aria-labelledby`, or `aria-describedby`, which is useful for clusters of icon buttons
+- `Topbar.Divider` is decorative and already marked `aria-hidden`
+- `Topbar.useTopbar()` lets compound children read the active sizing context, and throws if used outside `Topbar`
+
+## API
+
+- **Topbar** _(`{ size?, elevated? } & header props & Glass props`)_ - root container; `size` controls density and `elevated` toggles the shadow treatment
+- **Topbar.Section** _(`{ grow?, align?, gap?, wrap? }`)_ - flexible layout region with alignment and spacing helpers
+- **Topbar.Brand** _(`{ icon?, title?, subtitle?, iconClassName? }`)_ - brand helper for standard product/title treatment, or a hook point for custom children
+- **Topbar.Actions** _(`{ gap? } & div props`)_ - action cluster aligned to the right edge; gains accessible grouping semantics when labeled
+- **Topbar.Divider** _(`div props`)_ - responsive separator sized to the current topbar density
+- **Topbar.useTopbar()** _(() => `{ size: "compact" | "comfortable" | "spacious" }`)_ - access the active topbar sizing context inside compound children
 
 
