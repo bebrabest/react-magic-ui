@@ -145,6 +145,15 @@ async function applyInteractionState(page, target) {
       return ['selected-option3'];
     }
 
+    case 'slider-default': {
+      const slider = page.getByRole('slider');
+      await slider.focus();
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('ArrowRight');
+      await page.getByText('52').waitFor({ timeout: 5_000 });
+      return ['value-52'];
+    }
+
     case 'tabs-default': {
       await page.getByRole('tab', { name: 'Analytics' }).click();
       await page.getByText('Dive into interactive charts, trend analysis, and comparison reports').waitFor({
