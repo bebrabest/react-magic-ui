@@ -12,6 +12,12 @@ Modal presents content in a focus-trapped glass surface over an application.
 
 <Canvas of={ModalStories.Default} />
 
+## a11y + behavior notes
+
+- opening the modal moves focus into the dialog, traps `Tab` navigation while open, and restores focus to the previously focused trigger on close
+- `Escape` and overlay-click dismissal are enabled by default, but both can be disabled for stricter flows
+- use `title` and `description` whenever possible so the generated dialog semantics have meaningful labels
+
 ## Usage
 
 ```ts

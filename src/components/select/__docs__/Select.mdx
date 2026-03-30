@@ -6,11 +6,17 @@ import * as Select from "./Select.stories.tsx";
 
 # Select
 
-Select component with dropdown options.
+Select is a styled single-value combobox for short option lists.
 
 #### Example
 
 <Canvas of={Select.Default}/>
+
+## a11y + behavior notes
+
+- `Select` exposes combobox/listbox semantics and supports keyboard selection with `ArrowUp`, `ArrowDown`, `Home`, `End`, `Enter`, `Space`, and `Escape`
+- focus returns to the trigger after choosing an option, so it behaves more like a real form control than a floating menu
+- keep option labels short and distinct; this component is best for curated lists, not long searchable datasets
 
 ## Usage
 
@@ -44,12 +50,12 @@ const Example = () => {
 export default Example;
 ```
 
-#### Arguments
+#### Props
 
-- **disabled** - A boolean indicating whether the Select should be disabled or not. When disabled, the Select cannot be clicked or interacted with.
-- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the Select.
-- **options** - An array of objects with `value` and `label` properties. Each object represents a selectable option in the dropdown.
-- **value** - A string representing the currently selected option's value. Use this to control the Select component.
-- **onChange** - A function that receives the selected option's value as a string parameter. It is called when the user selects an option from the dropdown.
-- **placeholder** - An optional string that displays placeholder text when no option is selected. Defaults to "Select an option".
-- **enableClickAnimation** - A boolean indicating whether to enable the liquid bounce animation on click
+- **options** _`{ value: string; label: string }[]`_ — The selectable options rendered in the listbox.
+- **value** _`string`_ — Currently selected option value.
+- **onChange** _`(value: string) => void`_ — Called with the next selected value.
+- **placeholder** _`string`_ — Text shown when no value is selected. Defaults to `"Select an option"`.
+- **size** _`"small" | "medium" | "large"`_ — Control height and spacing.
+- **disabled** _`boolean`_ — Prevents opening, keyboard navigation, and selection.
+- **enableClickAnimation** _`boolean`_ — Enables the glass click animation on the trigger. Default is `true`.

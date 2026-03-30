@@ -12,6 +12,12 @@ Toasts deliver short, time-bound messages that appear above the interface withou
 
 <Canvas of={ToastStories.Playground} />
 
+## a11y + behavior notes
+
+- default/info/success toasts announce politely as `status`; error toasts announce urgently as `alert`
+- focused toasts can be dismissed with `Escape`, and the close button is always available for pointer users
+- keep titles short; longer follow-up context belongs in `description`
+
 ## Usage
 
 ```tsx
