@@ -19,23 +19,18 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   text,
   children,
   onClick,
+  type = "button",
   enableClickAnimation = true,
   rounded = false,
   className,
   ...props
 }, ref) => {
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!disabled && onClick) {
-      onClick(event);
-    }
-  };
-
   return (
     <Glass
       as="button"
       ref={ref}
-      type="button"
-      onClick={handleClick}
+      type={type}
+      onClick={onClick}
       enableLiquidAnimation={!disabled && enableClickAnimation}
       className={clsx(
         styles.btn,
