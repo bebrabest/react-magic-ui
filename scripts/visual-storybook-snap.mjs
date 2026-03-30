@@ -19,17 +19,16 @@ const now = new Date();
 const stamp = now.toISOString().replace(/[:.]/g, '-');
 const outDir = path.join(outRoot, stamp);
 
-const targets = [
-  { name: 'storybook-home', url: `${STORYBOOK_URL}/` },
-  { name: 'button-default', url: `${STORYBOOK_URL}/iframe.html?id=button--default&viewMode=story` },
-  { name: 'card-default', url: `${STORYBOOK_URL}/iframe.html?id=card--default&viewMode=story` },
-  { name: 'select-default', url: `${STORYBOOK_URL}/iframe.html?id=select--default&viewMode=story` },
-  { name: 'checkbox-default', url: `${STORYBOOK_URL}/iframe.html?id=checkbox--default&viewMode=story` },
-  { name: 'switch-default', url: `${STORYBOOK_URL}/iframe.html?id=switch--default&viewMode=story` },
-  { name: 'slider-default', url: `${STORYBOOK_URL}/iframe.html?id=slider--default&viewMode=story` },
-  { name: 'tabs-default', url: `${STORYBOOK_URL}/iframe.html?id=tabs--default&viewMode=story` },
-  { name: 'toast-playground', url: `${STORYBOOK_URL}/iframe.html?id=toast--playground&viewMode=story` },
-  { name: 'modal-default', url: `${STORYBOOK_URL}/iframe.html?id=modal--default&viewMode=story` },
+const targetSpecs = [
+  { name: 'button-default', title: 'Button', story: 'Default' },
+  { name: 'card-default', title: 'Card', story: 'Default' },
+  { name: 'select-default', title: 'Select', story: 'Default' },
+  { name: 'checkbox-default', title: 'Checkbox', story: 'Default' },
+  { name: 'switch-default', title: 'Switch', story: 'Default' },
+  { name: 'slider-default', title: 'Slider', story: 'Default' },
+  { name: 'tabs-default', title: 'Tabs', story: 'Default' },
+  { name: 'toast-playground', title: 'Toast', story: 'Playground' },
+  { name: 'modal-default', title: 'Modal', story: 'Default' },
 ];
 
 async function sleep(ms) {
@@ -38,7 +37,6 @@ async function sleep(ms) {
 
 async function waitForStorybook(timeoutMs = 90_000) {
   const deadline = Date.now() + timeoutMs;
-  // cheap probe that works without extra deps
   while (Date.now() < deadline) {
     try {
       const res = await fetch(`${STORYBOOK_URL}/iframe.html`, { method: 'GET' });
@@ -49,19 +47,88 @@ async function waitForStorybook(timeoutMs = 90_000) {
   throw new Error(`storybook did not become ready at ${STORYBOOK_URL} within ${timeoutMs}ms`);
 }
 
+async function fetchStoryIndex() {
+  const candidates = [`${STORYBOOK_URL}/index.json`, `${STORYBOOK_URL}/stories.json`];
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const entries = data.entries ?? data.stories;
+      if (entries && typeof entries === 'object') {
+        return { url, entries };
+      }
+    } catch {}
+  }
+
+  throw new Error(`could not load Storybook story index from ${candidates.join(' or ')}`);
+}
+
+function buildTargets(entries) {
+  const stories = Object.entries(entries).map(([id, entry]) => ({
+    id,
+    title: entry.title,
+    name: entry.name,
+    type: entry.type,
+  }));
+
+  return targetSpecs.map(spec => {
+    const match = stories.find(
+      story => story.type === 'story' && story.title === spec.title && story.name === spec.story,
+    );
+
+    if (!match) {
+      const available = stories
+        .filter(story => story.type === 'story' && story.title === spec.title)
+        .map(story => story.name)
+        .sort();
+      throw new Error(
+        `storybook target not found for ${spec.title}/${spec.story}. available stories for ${spec.title}: ${available.join(', ') || '(none)'}`,
+      );
+    }
+
+    return {
+      name: spec.name,
+      id: match.id,
+      title: match.title,
+      story: match.name,
+      url: `${STORYBOOK_URL}/iframe.html?id=${match.id}&viewMode=story`,
+    };
+  });
+}
+
 function startStorybook() {
-  // run the repo script so local storybook config is used
   const child = spawn('npm', ['run', 'storybook', '--', '-p', String(PORT), '--ci'], {
     stdio: 'pipe',
     env: { ...process.env, BROWSER: 'none' },
   });
 
   const logs = [];
-  const onData = (chunk) => logs.push(chunk.toString('utf8'));
+  const onData = chunk => logs.push(chunk.toString('utf8'));
   child.stdout.on('data', onData);
   child.stderr.on('data', onData);
 
   return { child, logs };
+}
+
+async function waitForStableStory(page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForSelector('#storybook-root, #storybook-docs', { timeout: 15_000 });
+  await page.waitForFunction(
+    () => {
+      const docsRoot = document.querySelector('#storybook-docs');
+      if (docsRoot) return true;
+
+      const storyRoot = document.querySelector('#storybook-root');
+      if (!storyRoot) return false;
+
+      return storyRoot.childElementCount > 0 || storyRoot.textContent.trim().length > 0;
+    },
+    { timeout: 15_000 },
+  );
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(750);
 }
 
 async function main() {
@@ -71,6 +138,8 @@ async function main() {
 
   try {
     await waitForStorybook();
+    const { url: storyIndexUrl, entries } = await fetchStoryIndex();
+    const targets = buildTargets(entries);
 
     const browser = await chromium.launch({
       headless: true,
@@ -78,24 +147,30 @@ async function main() {
       args: ['--no-sandbox', '--disable-dev-shm-usage'],
     });
 
-    const page = await browser.newPage({
-      viewport: { width: 1440, height: 1100 },
-      deviceScaleFactor: 1,
-    });
-
-    const pwLogs = [];
-    page.on('console', msg => pwLogs.push(`[console:${msg.type()}] ${msg.text()}`));
-    page.on('pageerror', err => pwLogs.push(`[pageerror] ${err.message}`));
-    page.on('requestfailed', req => pwLogs.push(`[requestfailed] ${req.url()} :: ${req.failure()?.errorText}`));
+    const pwLogs = [`[info] story index loaded from ${storyIndexUrl}`];
 
     for (const t of targets) {
+      const page = await browser.newPage({
+        viewport: { width: 1440, height: 1100 },
+        deviceScaleFactor: 1,
+      });
+
+      page.on('console', msg => pwLogs.push(`[console:${msg.type()}][${t.name}] ${msg.text()}`));
+      page.on('pageerror', err => pwLogs.push(`[pageerror][${t.name}] ${err.message}`));
+      page.on('requestfailed', req => {
+        const errorText = req.failure()?.errorText ?? 'unknown';
+        if (errorText === 'net::ERR_ABORTED') return;
+        pwLogs.push(`[requestfailed][${t.name}] ${req.url()} :: ${errorText}`);
+      });
+
       await page.goto(t.url, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await page.waitForTimeout(1500);
+      await waitForStableStory(page);
       await page.screenshot({ path: path.join(outDir, `${t.name}.png`), fullPage: true });
+      await page.close();
     }
 
     await fs.writeFile(path.join(outDir, 'playwright-log.txt'), pwLogs.join('\n') + '\n');
+    await fs.writeFile(path.join(outDir, 'targets.json'), JSON.stringify(targets, null, 2) + '\n');
     await browser.close();
 
     const storybookLog = sbLogs.join('');
@@ -104,14 +179,16 @@ async function main() {
     const files = await fs.readdir(outDir);
     console.log(JSON.stringify({ outDir, files }, null, 2));
   } finally {
-    // always stop the dev server
-    const waitExit = new Promise((resolve) => child.once('exit', resolve));
-    try { child.kill('SIGTERM'); } catch {}
+    const waitExit = new Promise(resolve => child.once('exit', resolve));
+    try {
+      child.kill('SIGTERM');
+    } catch {}
     await Promise.race([waitExit, sleep(3000)]);
-    try { child.kill('SIGKILL'); } catch {}
+    try {
+      child.kill('SIGKILL');
+    } catch {}
   }
 }
 
 await main();
-// safety: ensure we don't hang the autonomy loop
 process.exit(0);
