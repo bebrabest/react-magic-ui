@@ -13,6 +13,9 @@
       "*": ["./dist/index.d.ts"]
     }
   },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,6 +23,7 @@
       "require": "./dist/index.cjs.js",
       "default": "./dist/index.es.js"
     },
+    "./style.css": "./dist/react-magic-ui.css",
     "./dist/react-magic-ui.css": "./dist/react-magic-ui.css"
   },
   "files": [

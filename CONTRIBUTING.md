@@ -65,8 +65,10 @@ For a concise day-to-day workflow note, see `worklog/DEV_FLOW.md`.
 > ⚠️ NOTE 1: Safari and Firefox only partially support the effect (displacement will not be visible).
 > The contributions to improve cross-browser compatibility are welcome.
 
->  ⚠️ NOTE 2: There is and issue with Tailwind inline classes as the styles are not being applied when using the library in the project.
-> While the issues is not resolved, you should use Tailwind classes through @apply directive.
+> ⚠️ NOTE 2: Consumer apps should import the packaged stylesheet explicitly:
+> `import 'react-magic-ui/style.css'`
+>
+> The library ships compiled CSS already, so consumers should not need to scan library internals with Tailwind just to get the default styling.
 
 ## Commit Convention
 Before you create a Pull Request, please check that your commit messages follow the Conventional Commits specification. This helps maintain a clear and consistent commit history.

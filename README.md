@@ -20,11 +20,13 @@ Here you can mess with the components. Enjoy!
 npm install react-magic-ui
 ```
 
-2. Import styles in your main application file (e.g., `index.tsx` or `App.tsx`):
+2. Import the library stylesheet once in your app entry (for example `main.tsx`, `index.tsx`, or `App.tsx`):
 
+```ts
+import 'react-magic-ui/style.css'
 ```
-import 'react-magic-ui/dist/react-magic-ui.css'
-```
+
+That stylesheet import is part of the package contract right now. Without it, components render but won't pick up the liquid-glass styling.
 
 ## Documentation
 
@@ -37,20 +39,19 @@ Explore all components with interactive examples, props documentation, and live 
 Import the components you need:
 
 ```tsx
-import { Button, Card } from 'react-magic-ui';
+import 'react-magic-ui/style.css'
+import { Button, Card } from 'react-magic-ui'
 
 function App() {
   return (
     <section>
-      <Button>
-        Click me
-      </Button>
+      <Button>Click me</Button>
       <Card>
         <h2>Beautiful Card</h2>
         <p>With liquid glass effect</p>
       </Card>
     </section>
-  );
+  )
 }
 ```
 
