@@ -53,6 +53,54 @@ async function run(command, args, { cwd = repoRoot, env = process.env } = {}) {
   });
 }
 
+async function auditDemoSource() {
+  const appPath = path.join(demoDir, 'src', 'App.tsx');
+  const mainPath = path.join(demoDir, 'src', 'main.tsx');
+  const warnings = [];
+
+  let appSource = '';
+  try {
+    appSource = await fs.readFile(appPath, 'utf8');
+  } catch {
+    appSource = '';
+  }
+
+  let mainSource = '';
+  try {
+    mainSource = await fs.readFile(mainPath, 'utf8');
+  } catch {
+    mainSource = '';
+  }
+
+  const combinedSource = `${mainSource}\n${appSource}`;
+
+  if (!/import\s+['"]react-magic-ui\/style\.css['"]\s*;?/m.test(combinedSource)) {
+    warnings.push({
+      type: 'missing-style-import',
+      severity: 'warning',
+      message: 'Demo app does not explicitly import react-magic-ui/style.css from src/main.tsx or src/App.tsx.',
+      filesChecked: [mainPath, appPath],
+    });
+  }
+
+  const sidebarToggleUsed = /<Sidebar\.Toggle\b/.test(appSource);
+  const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(appSource);
+
+  if (sidebarToggleUsed && !sidebarMarkedCollapsible) {
+    warnings.push({
+      type: 'sidebar-toggle-without-collapsible',
+      severity: 'warning',
+      message: 'Demo renders <Sidebar.Toggle /> but the surrounding <Sidebar> is not marked collapsible, so the toggle will render null by contract.',
+      filesChecked: [appPath],
+    });
+  }
+
+  return {
+    filesChecked: [mainPath, appPath],
+    warnings,
+  };
+}
+
 async function main() {
   await fs.mkdir(outDir, { recursive: true });
   await fs.mkdir(packTempDir, { recursive: true });
@@ -62,6 +110,7 @@ async function main() {
     demoDir,
     outDir,
     steps: [],
+    warnings: [],
   };
 
   const logStep = async (name, fn) => {
@@ -85,6 +134,12 @@ async function main() {
   await logStep('verify demo app path exists', async () => {
     await fs.access(demoDir);
   });
+
+  const sourceAudit = await logStep('audit demo source for consumer contract mismatches', () =>
+    auditDemoSource()
+  );
+  summary.warnings = sourceAudit.warnings;
+  await fs.writeFile(path.join(outDir, 'demo-source-audit.json'), JSON.stringify(sourceAudit, null, 2));
 
   const buildLibraryResult = await logStep('build library before packing', () =>
     run('npm', ['run', 'build'], { cwd: repoRoot })
@@ -119,6 +174,13 @@ async function main() {
 
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));
+
+  if (summary.warnings.length > 0) {
+    console.warn(`demo consumer source audit emitted ${summary.warnings.length} warning(s)`);
+    for (const warning of summary.warnings) {
+      console.warn(`- [${warning.type}] ${warning.message}`);
+    }
+  }
 }
 
 await main();
