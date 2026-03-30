@@ -5,61 +5,70 @@ import "@testing-library/jest-dom";
 import Topbar from "../Topbar";
 
 describe("Topbar component", () => {
-  it("renders brand content with icon, title, and subtitle", () => {
+  it("renders as a header landmark with brand and actions content", () => {
     render(
-      <Topbar>
-        <Topbar.Brand icon="✨" title="Magic UI" subtitle="Command Center" />
-      </Topbar>,
-    );
-
-    expect(screen.getByText("Magic UI")).toBeInTheDocument();
-    expect(screen.getByText("Command Center")).toBeInTheDocument();
-    expect(screen.getByText("✨")).toBeInTheDocument();
-  });
-
-  it("allows sections to grow and align content", () => {
-    render(
-      <Topbar>
-        <Topbar.Section data-testid="grow-section" grow align="between">
-          <span>Start</span>
-          <span>End</span>
+      <Topbar aria-label="Primary topbar">
+        <Topbar.Section>
+          <Topbar.Brand title="Magic UI" subtitle="Component library" />
         </Topbar.Section>
-      </Topbar>,
-    );
-
-    const section = screen.getByTestId("grow-section");
-    // Classes are hashed, so we just check if it renders
-    expect(section).toBeInTheDocument();
-  });
-
-  it("matches divider height to the selected size", () => {
-    render(
-      <Topbar size="compact">
         <Topbar.Actions>
-          <Topbar.Divider data-testid="divider" />
+          <button type="button">Search</button>
+          <button type="button">Profile</button>
         </Topbar.Actions>
       </Topbar>,
     );
 
-    expect(screen.getByTestId("divider")).toBeInTheDocument();
+    expect(
+      screen.getByRole("banner", { name: "Primary topbar" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Magic UI")).toBeInTheDocument();
+    expect(screen.getByText("Component library")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
   });
 
-  it("exposes context through useTopbar helper", () => {
-    const ReadSize = () => {
-      const { size } = Topbar.useTopbar();
-      return <span>size:{size}</span>;
-    };
-
+  it("renders custom brand children instead of generated title/subtitle content", () => {
     render(
-      <Topbar size="spacious">
-        <Topbar.Section>
-          <ReadSize />
-        </Topbar.Section>
+      <Topbar>
+        <Topbar.Brand title="Should not render" subtitle="Also hidden">
+          <a href="/dashboard">Custom brand</a>
+        </Topbar.Brand>
       </Topbar>,
     );
 
-    expect(screen.getByText("size:spacious")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Custom brand" })).toBeInTheDocument();
+    expect(screen.queryByText("Should not render")).not.toBeInTheDocument();
+    expect(screen.queryByText("Also hidden")).not.toBeInTheDocument();
+  });
+
+  it("lets Topbar.Actions inherit section behavior while keeping right-aligned content accessible", () => {
+    render(
+      <Topbar>
+        <Topbar.Actions data-testid="actions" gap="relaxed">
+          <button type="button">Notifications</button>
+        </Topbar.Actions>
+      </Topbar>,
+    );
+
+    expect(screen.getByTestId("actions")).toContainElement(
+      screen.getByRole("button", { name: "Notifications" }),
+    );
+  });
+
+  it("throws when compound subcomponents that require context are rendered outside Topbar", () => {
+    expect(() => render(<Topbar.Brand title="Detached brand" />)).toThrow(
+      /Topbar\.Brand must be used within Topbar/,
+    );
+    expect(() => render(<Topbar.Divider />)).toThrow(
+      /Topbar\.Divider must be used within Topbar/,
+    );
+    expect(() => {
+      const DetachedHookConsumer = () => {
+        Topbar.useTopbar();
+        return null;
+      };
+
+      render(<DetachedHookConsumer />);
+    }).toThrow(/Topbar\.useTopbar must be used within Topbar/);
   });
 });
-
-
