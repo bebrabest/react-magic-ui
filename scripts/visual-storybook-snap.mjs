@@ -29,6 +29,7 @@ const targetSpecs = [
   { name: 'tabs-default', title: 'Tabs', story: 'Default' },
   { name: 'toast-playground', title: 'Toast', story: 'Playground' },
   { name: 'modal-default', title: 'Modal', story: 'Default' },
+  { name: 'sidebar-default', title: 'Sidebar', story: 'Default' },
 ];
 
 async function sleep(ms) {
@@ -172,6 +173,13 @@ async function applyInteractionState(page, target) {
       await page.getByRole('button', { name: 'Open modal' }).click();
       await page.getByRole('dialog', { name: 'Glass modal' }).waitFor({ timeout: 5_000 });
       return ['dialog-open'];
+    }
+
+    case 'sidebar-default': {
+      const toggle = page.getByRole('button', { name: 'collapse sidebar' });
+      await toggle.click();
+      await page.getByRole('button', { name: 'expand sidebar' }).waitFor({ timeout: 5_000 });
+      return ['collapsed'];
     }
 
     default:
