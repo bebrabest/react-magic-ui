@@ -11,6 +11,10 @@ const outRoot = process.env.RMUI_DEMO_CONTRACT_OUTDIR
   : path.join(repoRoot, 'worklog', 'demo-consumer');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const outDir = path.join(outRoot, stamp);
+const packTempRoot = process.env.RMUI_PACK_TEMP_DIR
+  ? path.resolve(process.env.RMUI_PACK_TEMP_DIR)
+  : path.join(repoRoot, 'worklog', 'pack-temp');
+const packTempDir = path.join(packTempRoot, stamp);
 
 async function run(command, args, { cwd = repoRoot, env = process.env } = {}) {
   return new Promise((resolve, reject) => {
@@ -51,6 +55,7 @@ async function run(command, args, { cwd = repoRoot, env = process.env } = {}) {
 
 async function main() {
   await fs.mkdir(outDir, { recursive: true });
+  await fs.mkdir(packTempDir, { recursive: true });
 
   const summary = {
     repoRoot,
@@ -87,9 +92,11 @@ async function main() {
   await fs.writeFile(path.join(outDir, 'library-build.stdout.txt'), buildLibraryResult.stdout);
   await fs.writeFile(path.join(outDir, 'library-build.stderr.txt'), buildLibraryResult.stderr);
 
-  const packResult = await logStep('pack library tarball', () => run('npm', ['pack'], { cwd: repoRoot }));
+  const packResult = await logStep('pack library tarball', () =>
+    run('npm', ['pack', '--pack-destination', packTempDir], { cwd: repoRoot })
+  );
   const tarballName = packResult.stdout.trim().split(/\s+/).pop();
-  const tarballPath = path.join(repoRoot, tarballName);
+  const tarballPath = path.join(packTempDir, tarballName);
 
   await fs.writeFile(path.join(outDir, 'pack.stdout.txt'), packResult.stdout);
   await fs.writeFile(path.join(outDir, 'pack.stderr.txt'), packResult.stderr);
@@ -108,6 +115,7 @@ async function main() {
 
   summary.tarballName = tarballName;
   summary.tarballPath = tarballPath;
+  summary.packTempDir = packTempDir;
 
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));

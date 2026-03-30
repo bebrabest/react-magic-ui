@@ -17,6 +17,9 @@ const outDir = path.join(outRoot, stamp);
 const previewPort = Number(process.env.RMUI_DEMO_PREVIEW_PORT ?? '4173');
 const previewUrl = process.env.RMUI_DEMO_PREVIEW_URL ?? `http://127.0.0.1:${previewPort}`;
 const executablePath = process.env.PLAYWRIGHT_CHROME_PATH ?? '/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome';
+const packTempRoot = process.env.RMUI_PACK_TEMP_DIR
+  ? path.resolve(process.env.RMUI_PACK_TEMP_DIR)
+  : path.join(repoRoot, 'worklog', 'pack-temp');
 
 async function sleep(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -255,7 +258,10 @@ async function main() {
   const validation = spawn('npm', ['run', 'test:demo-consumer'], {
     cwd: repoRoot,
     stdio: 'pipe',
-    env: process.env,
+    env: {
+      ...process.env,
+      RMUI_PACK_TEMP_DIR: packTempRoot,
+    },
   });
 
   let validationStdout = '';
