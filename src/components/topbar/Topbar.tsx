@@ -181,13 +181,32 @@ export type TopbarActionsProps = ComponentPropsWithoutRef<"div"> & {
 };
 
 const TopbarActions = forwardRef<HTMLDivElement, TopbarActionsProps>(
-  ({ gap = "tight", className, children, ...rest }, ref) => {
+  (
+    {
+      gap = "tight",
+      className,
+      children,
+      role,
+      "aria-label": ariaLabel,
+      "aria-labelledby": ariaLabelledBy,
+      "aria-describedby": ariaDescribedBy,
+      ...rest
+    },
+    ref,
+  ) => {
+    const inferredRole =
+      role ?? (ariaLabel || ariaLabelledBy || ariaDescribedBy ? "group" : undefined);
+
     return (
       <TopbarSection
         ref={ref}
         align="right"
         gap={gap}
         className={cn(styles.topbarActions, className)}
+        role={inferredRole}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         {...rest}
       >
         {children}

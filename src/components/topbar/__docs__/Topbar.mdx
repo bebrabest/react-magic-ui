@@ -15,7 +15,7 @@ Glassmorphism top navigation bar with compound sections, brand, and action helpe
 ## Usage
 
 ```tsx
-import { Topbar, Button, Input } from "react-glass-ui";
+import { Topbar, Button, Input } from "react-magic-ui";
 
 export const Example = () => (
   <Topbar>
@@ -40,7 +40,7 @@ export const Example = () => (
 - **elevated** _(`boolean`)_ – Toggles the drop shadow for a flatter appearance.
 - **Topbar.Section** _(`{ grow, align, gap, wrap }`)_ – Compose flexible areas, optionally stretching with `grow`.
 - **Topbar.Brand** _(`{ icon, title, subtitle }`)_ – Brand helper that adapts to the current topbar size.
-- **Topbar.Actions** _(`{ gap }`)_ – Right-aligned action container, wraps on smaller widths if needed.
+- **Topbar.Actions** _(`{ gap }`)_ – Right-aligned action container, wraps on smaller widths if needed. If you give it `aria-label`/`aria-labelledby`, it automatically exposes an accessible action group for clustered icon buttons.
 - **Topbar.Divider** _(`void`)_ – Responsive divider that matches the current topbar height.
 - **Topbar.useTopbar()** _(() => TopbarContextValue)_ – Access the active `size` within the component tree.
 

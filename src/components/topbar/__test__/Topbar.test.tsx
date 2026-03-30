@@ -55,6 +55,32 @@ describe("Topbar component", () => {
     );
   });
 
+  it("upgrades labeled action clusters to an accessible group without forcing unlabeled group semantics", () => {
+    const { rerender } = render(
+      <Topbar>
+        <Topbar.Actions aria-label="Primary actions">
+          <button type="button">Search</button>
+          <button type="button">Profile</button>
+        </Topbar.Actions>
+      </Topbar>,
+    );
+
+    expect(screen.getByRole("group", { name: "Primary actions" })).toContainElement(
+      screen.getByRole("button", { name: "Search" }),
+    );
+
+    rerender(
+      <Topbar>
+        <Topbar.Actions>
+          <button type="button">Plain actions</button>
+        </Topbar.Actions>
+      </Topbar>,
+    );
+
+    expect(screen.queryByRole("group", { name: "Primary actions" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Plain actions" })).toBeInTheDocument();
+  });
+
   it("throws when compound subcomponents that require context are rendered outside Topbar", () => {
     expect(() => render(<Topbar.Brand title="Detached brand" />)).toThrow(
       /Topbar\.Brand must be used within Topbar/,
