@@ -80,7 +80,11 @@ describe("ToastProvider", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /show sticky toast/i }));
 
-    expect(await screen.findByText("Failed")).toBeInTheDocument();
+    const alertToast = await screen.findByRole("alert");
+
+    expect(alertToast).toHaveAttribute("aria-live", "assertive");
+    expect(alertToast).toHaveAttribute("aria-atomic", "true");
+    expect(screen.getByText("Failed")).toBeInTheDocument();
 
     act(() => {
       toastApi?.dismissToast("danger-toast");
@@ -156,6 +160,25 @@ describe("ToastProvider", () => {
     await waitFor(() => {
       expect(onClose).toHaveBeenCalledTimes(1);
       expect(screen.queryByText("Closable")).not.toBeInTheDocument();
+    }, { timeout: 1000 });
+  });
+
+  it("lets keyboard users dismiss a focused toast with Escape", async () => {
+    render(
+      <ToastProvider>
+        <ToastTrigger />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /show default toast/i }));
+
+    const status = await screen.findByRole("status");
+
+    status.focus();
+    fireEvent.keyDown(status, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Saved")).not.toBeInTheDocument();
     }, { timeout: 1000 });
   });
 });

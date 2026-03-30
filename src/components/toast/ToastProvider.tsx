@@ -130,8 +130,13 @@ const ToastCard: React.FC<{
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const removeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closed = useRef(false);
+  const titleId = useMemo(() => `toast-title-${toast.id}`, [toast.id]);
+  const descriptionId = useMemo(() => `toast-description-${toast.id}`, [toast.id]);
 
   const animPhaseClass = phase === "initial" ? styles.animInitial : phase === "enter" ? styles.animEnter : styles.animExit;
+  const isUrgent = toast.variant === "error";
+  const announcementRole = isUrgent ? "alert" : "status";
+  const announcementPriority = isUrgent ? "assertive" : "polite";
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -188,12 +193,28 @@ const ToastCard: React.FC<{
 
   const animationClass = animationClassMap[toast.animation];
 
+  const handleDismiss = useCallback(() => {
+    setPhase("exit");
+  }, []);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleDismiss();
+    }
+  }, [handleDismiss]);
+
   return (
     <Glass
-      role="status"
-      aria-live="polite"
+      role={announcementRole}
+      aria-live={announcementPriority}
+      aria-atomic="true"
+      aria-labelledby={toast.title ? titleId : undefined}
+      aria-describedby={toast.description ? descriptionId : undefined}
+      tabIndex={0}
       enableLiquidAnimation={toast.enableLiquidAnimation}
       triggerAnimation={phase === "enter"}
+      onKeyDown={handleKeyDown}
       rootClassName={cn(
         styles.toastCard,
         variantClassMap[toast.variant],
@@ -205,12 +226,12 @@ const ToastCard: React.FC<{
         <div className={styles.toastInner}>
           <div className={styles.toastTextContainer}>
             {toast.title && (
-              <p className={styles.toastTitle}>
+              <p id={titleId} className={styles.toastTitle}>
                 {toast.title}
               </p>
             )}
             {toast.description && (
-              <p className={styles.toastDescription}>
+              <p id={descriptionId} className={styles.toastDescription}>
                 {toast.description}
               </p>
             )}
@@ -220,7 +241,7 @@ const ToastCard: React.FC<{
             type="button"
             aria-label="close toast"
             className={styles.toastCloseButton}
-            onClick={() => setPhase("exit")}
+            onClick={handleDismiss}
           >
             ×
           </button>
