@@ -4,38 +4,61 @@ Thanks for your interest in contributing to react-magic-ui!
 
 ## Structure
 
-All components are located in the `src/components` directory.
+Components live in `src/components` and are exported through `src/components/index.ts` and `src/index.ts`.
 
-Each component has its own directory with the following structure:
-```
+Typical component layout today:
+
+```text
 src/components/
   └── component-name/
-      ├── __docs__/                     
-          ├── <Component>.mdx           # Docs page
-          ├── <Component>.stories.tsx   # Storybook stories
-          └── Example.tsx               # Usage example for docs
-      ├── __test__/                     # Test files
-      ├── style/                        # SCSS Styles
-      ├── <Component>.tsx               # Main component file
-      └── index.ts                      # Export file
+      ├── <Component>.tsx
+      └── index.ts
 ```
+
+Storybook docs are colocated under per-component `__docs__` folders when present:
+
+```text
+src/components/<component>/__docs__/
+  ├── <Component>.mdx
+  └── <Component>.stories.tsx
+```
+
+Tests are not fully standardized yet. Existing tests mostly live in `src/__test__/**`, with coverage gaps tracked in `worklog/AUDIT_TESTS.md`.
 
 ## Development
 ### Clone the repository
 ```bash
 git clone https://github.com/tweeedlex/react-magic-ui.git
+cd react-magic-ui
 ```
 
 ### Install dependencies
 ```bash
-cd react-magic-ui
-yarn
+npm install
 ```
 
-### Run the Storybook
+### Common commands
 ```bash
+# Run Storybook locally
 npm run storybook
+
+# Run tests once
+npm test
+
+# Run tests in watch mode
+npm run test-watch
+
+# Lint files (currently auto-fixes)
+npm run lint
+
+# Build the library
+npm run build
+
+# Build static Storybook output
+npm run build-storybook
 ```
+
+For a concise day-to-day workflow note, see `worklog/DEV_FLOW.md`.
 
 ---
 

@@ -86,19 +86,32 @@ function App() {
 
 ## Development
 
+The repo uses **npm + Vite + Storybook + Vitest**.
+
 ```bash
 # Install dependencies
 npm install
 
-# Run Storybook
+# Run Storybook for component development
 npm run storybook
 
-# Build library
+# Run tests once
+npm test
+
+# Watch tests locally
+npm run test-watch
+
+# Lint source files (currently runs with --fix)
+npm run lint
+
+# Build the library package
 npm run build
 
-# Run tests
-npm test
+# Build the static Storybook site
+npm run build-storybook
 ```
+
+For a short contributor workflow note, see [`worklog/DEV_FLOW.md`](./worklog/DEV_FLOW.md).
 
 ## Contributing
 Please read the [contributing guide](/CONTRIBUTING.md).
