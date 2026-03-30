@@ -14,6 +14,27 @@ import styles from "./style/Modal.module.scss";
 
 type ModalSize = "sm" | "md" | "lg";
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'area[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe',
+  'object',
+  'embed',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+const getFocusableElements = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (element) =>
+      !element.hasAttribute("disabled") &&
+      element.getAttribute("aria-hidden") !== "true",
+  );
+
 export type ModalProps = ComponentPropsWithoutRef<"div"> & {
   open: boolean;
   onClose?: () => void;
@@ -51,6 +72,7 @@ const Modal: React.FC<ModalProps> = ({
   const [container, setContainer] = useState<HTMLElement | null>(null);
   const [shouldAnimate, setShouldAnimate] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -93,6 +115,23 @@ const Modal: React.FC<ModalProps> = ({
   }, [lockScroll, open]);
 
   useEffect(() => {
+    if (!open || typeof document === "undefined") {
+      return;
+    }
+
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    previouslyFocusedElementRef.current?.focus?.({ preventScroll: true });
+    previouslyFocusedElementRef.current = null;
+  }, [open]);
+
+  useEffect(() => {
     if (!open || !closeOnEsc) {
       return;
     }
@@ -114,10 +153,73 @@ const Modal: React.FC<ModalProps> = ({
       return;
     }
 
-    const element = contentRef.current;
-    if (element) {
-      element.focus({ preventScroll: true });
+    const timer = window.setTimeout(() => {
+      const element = contentRef.current;
+      if (!element) {
+        return;
+      }
+
+      const focusableElements = getFocusableElements(element);
+      const firstFocusableElement = focusableElements[0];
+
+      (firstFocusableElement ?? element).focus({ preventScroll: true });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
     }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const element = contentRef.current;
+      if (!element) {
+        return;
+      }
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (activeElement && !element.contains(activeElement) && activeElement !== element) {
+        return;
+      }
+
+      const focusableElements = getFocusableElements(element);
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        element.focus({ preventScroll: true });
+        return;
+      }
+
+      const firstFocusableElement = focusableElements[0];
+      const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey) {
+        if (activeElement === firstFocusableElement || activeElement === element) {
+          event.preventDefault();
+          lastFocusableElement.focus({ preventScroll: true });
+        }
+
+        return;
+      }
+
+      if (activeElement === lastFocusableElement) {
+        event.preventDefault();
+        firstFocusableElement.focus({ preventScroll: true });
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open]);
 
   // Trigger liquid animation when modal opens
@@ -154,8 +256,8 @@ const Modal: React.FC<ModalProps> = ({
         onClick={
           closeOnOverlay
             ? () => {
-              handleClose();
-            }
+                handleClose();
+              }
             : undefined
         }
       />
@@ -215,5 +317,3 @@ const Modal: React.FC<ModalProps> = ({
 };
 
 export default Modal;
-
-
