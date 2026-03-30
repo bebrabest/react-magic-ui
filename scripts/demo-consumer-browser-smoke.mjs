@@ -270,6 +270,71 @@ async function runSmoke(browser) {
     }
   });
 
+  await step('consumer state survives section navigation and a modal round-trip', async () => {
+    const inputsNavItem = page.getByRole('button', { name: /^inputs & forms$/i });
+    await inputsNavItem.click();
+    await page.waitForFunction(() => {
+      const section = document.getElementById('inputs');
+      if (!(section instanceof HTMLElement)) {
+        return false;
+      }
+
+      const { top } = section.getBoundingClientRect();
+      return top >= 0 && top <= window.innerHeight * 0.35;
+    });
+
+    const input = page.getByPlaceholder('Small input...');
+    await input.focus();
+    await input.fill('persist me');
+
+    const combobox = page.locator('#inputs').getByRole('combobox').first();
+    await combobox.focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+
+    const selectedBeforeModal = await combobox.textContent();
+    if (!selectedBeforeModal || /small select/i.test(selectedBeforeModal)) {
+      throw new Error(`select did not settle on a real value before modal round-trip (text=${JSON.stringify(selectedBeforeModal)})`);
+    }
+
+    const openModalButton = page.getByRole('button', { name: /open modal/i });
+    await openModalButton.click();
+    const dialog = page.getByRole('dialog', { name: /glass modal/i });
+    await dialog.waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: /confirm/i }).click();
+    await dialog.waitFor({ state: 'hidden' });
+
+    await inputsNavItem.click();
+    await page.waitForFunction(() => {
+      const section = document.getElementById('inputs');
+      if (!(section instanceof HTMLElement)) {
+        return false;
+      }
+
+      const { top } = section.getBoundingClientRect();
+      return top >= 0 && top <= window.innerHeight * 0.35;
+    });
+
+    const state = await page.evaluate(() => {
+      const inputEl = document.querySelector('input[placeholder="Small input..."]');
+      const comboEl = document.querySelector('#inputs [role="combobox"]');
+
+      return {
+        inputValue: inputEl instanceof HTMLInputElement ? inputEl.value : null,
+        selectText: comboEl?.textContent?.trim() ?? null,
+      };
+    });
+
+    if (state.inputValue !== 'persist me') {
+      throw new Error(`input state did not survive navigation/modal round-trip (value=${JSON.stringify(state.inputValue)})`);
+    }
+
+    if (state.selectText !== selectedBeforeModal?.trim()) {
+      throw new Error(`select state changed across navigation/modal round-trip (before=${JSON.stringify(selectedBeforeModal?.trim())}, after=${JSON.stringify(state.selectText)})`);
+    }
+  });
+
   return { page, results, pwLogs };
 }
 
