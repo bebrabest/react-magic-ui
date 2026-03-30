@@ -388,12 +388,15 @@ const SidebarToggle = forwardRef<HTMLButtonElement, SidebarToggleProps>(
       onClick?.(event);
     };
 
+    const ariaExpandedProp = rest["aria-expanded"];
+
     return (
       <button
         ref={ref}
         type="button"
         className={clsx(styles.sidebarToggle, className)}
         aria-label={collapsed ? "expand sidebar" : "collapse sidebar"}
+        aria-expanded={ariaExpandedProp ?? !collapsed}
         onClick={handleClick}
         {...rest}
       >

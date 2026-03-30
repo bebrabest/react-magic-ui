@@ -74,11 +74,21 @@ describe("Sidebar component", () => {
     const handleToggle = vi.fn();
     renderSidebar({ collapsed: false, onToggle: handleToggle });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "collapse sidebar" }),
-    );
+    const toggle = screen.getByRole("button", { name: "collapse sidebar" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(toggle);
 
     expect(handleToggle).toHaveBeenCalledWith(true);
+  });
+
+  it("reflects collapsed state via aria-expanded on the toggle", () => {
+    renderSidebar({ collapsed: true });
+
+    expect(
+      screen.getByRole("button", { name: "expand sidebar" }),
+    ).toHaveAttribute("aria-expanded", "false");
   });
 
   it("supports arrow/home/end keyboard navigation across enabled items", async () => {
