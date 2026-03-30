@@ -28,7 +28,7 @@ const targets = [
   { name: 'switch-default', url: `${STORYBOOK_URL}/iframe.html?id=switch--default&viewMode=story` },
   { name: 'slider-default', url: `${STORYBOOK_URL}/iframe.html?id=slider--default&viewMode=story` },
   { name: 'tabs-default', url: `${STORYBOOK_URL}/iframe.html?id=tabs--default&viewMode=story` },
-  { name: 'toast-default', url: `${STORYBOOK_URL}/iframe.html?id=toast--default&viewMode=story` },
+  { name: 'toast-playground', url: `${STORYBOOK_URL}/iframe.html?id=toast--playground&viewMode=story` },
   { name: 'modal-default', url: `${STORYBOOK_URL}/iframe.html?id=modal--default&viewMode=story` },
 ];
 
