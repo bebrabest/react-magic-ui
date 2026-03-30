@@ -23,7 +23,11 @@ src/components/<component>/__docs__/
   └── <Component>.stories.tsx
 ```
 
-Tests are not fully standardized yet. Existing tests mostly live in `src/__test__/**`, with coverage gaps tracked in `worklog/AUDIT_TESTS.md`.
+Tests now live alongside components in `src/components/<component>/__test__/**`.
+
+For behavior-heavy or accessibility-sensitive components (for example modal, select, tabs, slider, toast, checkbox, switch, sidebar), contributors should preserve and extend the current keyboard/ARIA contract rather than treating them as visual-only wrappers. When changing those components, add or update regression tests in the colocated `__test__` folder.
+
+Coverage gaps and audit notes are tracked in `worklog/AUDIT_TESTS.md`.
 
 ## Development
 ### Clone the repository

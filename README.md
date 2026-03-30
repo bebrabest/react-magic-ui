@@ -118,6 +118,12 @@ npm run build-storybook
 
 For a short contributor workflow note, see [`worklog/DEV_FLOW.md`](./worklog/DEV_FLOW.md).
 
+## Quality expectations
+
+This library now has colocated Vitest coverage for all exported components under `src/components/<component>/__test__/**`.
+
+If you change an interactive component, treat keyboard behavior, focus management, and ARIA semantics as part of the public contract — not just the visuals. In practice that means updating tests when behavior changes, especially for components like `Modal`, `Select`, `Tabs`, `Slider`, `Toast`, `Checkbox`, `Switch`, and navigation shells.
+
 ## Contributing
 Please read the [contributing guide](/CONTRIBUTING.md).
 
