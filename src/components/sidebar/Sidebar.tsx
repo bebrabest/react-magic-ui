@@ -1,5 +1,6 @@
 import React, {
   ComponentPropsWithoutRef,
+  KeyboardEvent,
   ReactNode,
   forwardRef,
   useCallback,
@@ -241,6 +242,7 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
       className,
       children,
       onClick,
+      onKeyDown,
       ...rest
     },
     ref,
@@ -252,6 +254,46 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const isActive = activeItemId === itemId;
 
+    const moveFocus = (
+      currentTarget: HTMLButtonElement,
+      direction: "next" | "prev" | "first" | "last",
+    ) => {
+      const container = currentTarget.closest("nav");
+
+      if (!container) {
+        return;
+      }
+
+      const items = Array.from(
+        container.querySelectorAll<HTMLButtonElement>(
+          'button[data-sidebar-item="true"]:not(:disabled)',
+        ),
+      );
+
+      if (items.length === 0) {
+        return;
+      }
+
+      const currentIndex = items.indexOf(currentTarget);
+
+      if (currentIndex === -1) {
+        return;
+      }
+
+      let nextIndex = currentIndex;
+
+      if (direction === "first") {
+        nextIndex = 0;
+      } else if (direction === "last") {
+        nextIndex = items.length - 1;
+      } else {
+        const delta = direction === "next" ? 1 : -1;
+        nextIndex = (currentIndex + delta + items.length) % items.length;
+      }
+
+      items[nextIndex]?.focus();
+    };
+
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (disabled) {
         event.preventDefault();
@@ -260,6 +302,29 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
 
       handleItemSelect(itemId, event);
       onClick?.(event);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+      if (disabled) {
+        onKeyDown?.(event);
+        return;
+      }
+
+      if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+        event.preventDefault();
+        moveFocus(event.currentTarget, "next");
+      } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveFocus(event.currentTarget, "prev");
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        moveFocus(event.currentTarget, "first");
+      } else if (event.key === "End") {
+        event.preventDefault();
+        moveFocus(event.currentTarget, "last");
+      }
+
+      onKeyDown?.(event);
     };
 
     const ariaLabel = typeof children === "string" ? children : ariaLabelProp;
@@ -275,8 +340,11 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
           className,
         )}
         onClick={handleClick}
+        onKeyDown={handleKeyDown}
         disabled={disabled}
         aria-label={ariaLabel}
+        aria-current={isActive ? "page" : undefined}
+        data-sidebar-item="true"
         {...restProps}
       >
         {icon && (
