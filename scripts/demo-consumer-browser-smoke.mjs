@@ -95,6 +95,27 @@ async function runSmoke(browser) {
     await page.getByRole('button', { name: /^default$/i }).waitFor({ state: 'visible' });
   });
 
+  await step('sidebar click navigation scrolls the consumer demo to the matching section', async () => {
+    const feedbackNavItem = page.getByRole('button', { name: /^feedback & display$/i });
+    await feedbackNavItem.waitFor({ state: 'visible' });
+    await feedbackNavItem.click();
+
+    await page.waitForFunction(() => {
+      const section = document.getElementById('feedback');
+      if (!(section instanceof HTMLElement)) {
+        return false;
+      }
+
+      const { top } = section.getBoundingClientRect();
+      return top >= 0 && top <= window.innerHeight * 0.35;
+    });
+
+    await page.waitForFunction(() => {
+      const button = Array.from(document.querySelectorAll('button')).find((node) => node.textContent?.trim() === 'Feedback & Display');
+      return button?.getAttribute('aria-current') === 'page';
+    });
+  });
+
   await step('sidebar keyboard navigation updates active item', async () => {
     const overview = page.getByRole('button', { name: /^overview$/i });
     await overview.focus();
