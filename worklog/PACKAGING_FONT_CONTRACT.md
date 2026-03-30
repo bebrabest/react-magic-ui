@@ -30,6 +30,10 @@ remove the remote font import from the shipped CSS and treat typography as part 
 
 ## contract after this change
 
+- importing `react-magic-ui/style.css` should not fetch remote fonts
+- importing `react-magic-ui/style.css` should not override the host app's typography globally
+- components inherit the surrounding app font unless a consumer opts into `--rmui-font-family`
+
 default install:
 
 ```ts

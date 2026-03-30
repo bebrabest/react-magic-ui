@@ -30,7 +30,7 @@ That stylesheet import is part of the package contract right now. Without it, co
 
 `react` and `react-dom` are peer dependencies. Most React apps already have them installed, but if you're wiring this into a fresh project, install them explicitly.
 
-The package no longer auto-loads Google Fonts. If you want the original look, load `Nunito` yourself in your app shell, or override `--rmui-font-family` after importing `react-magic-ui/style.css`.
+The package no longer auto-loads Google Fonts, and it no longer forces a global `font-family` on your whole app. Components now inherit your app typography by default. If you want the original look, load `Nunito` yourself in your app shell and/or override `--rmui-font-family` after importing `react-magic-ui/style.css`.
 
 ## Documentation
 

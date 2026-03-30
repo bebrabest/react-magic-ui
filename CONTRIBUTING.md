@@ -70,7 +70,8 @@ For a concise day-to-day workflow note, see `worklog/DEV_FLOW.md`.
 >
 > The library ships compiled CSS already, so consumers should not need to scan library internals with Tailwind just to get the default styling.
 
-> ⚠️ NOTE 3: The published stylesheet does not fetch web fonts anymore.
+> ⚠️ NOTE 3: The published stylesheet does not fetch web fonts anymore and it should not set a package-wide `font-family` on the consumer app.
+> Components should inherit the app's typography by default.
 > If you want the original `Nunito` look, load that font in the consuming app (or docs/demo) and/or override `--rmui-font-family` after the stylesheet import.
 
 ## Commit Convention
