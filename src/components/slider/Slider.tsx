@@ -10,7 +10,7 @@ import React, {
 import styles from "./style/Slider.module.scss";
 import clsx from "clsx";
 
-export type SliderProps = ComponentPropsWithoutRef<"div"> & {
+export type SliderProps = Omit<ComponentPropsWithoutRef<"div">, "onChange"> & {
   disabled?: boolean;
   size?: "small" | "medium" | "large";
   min?: number;

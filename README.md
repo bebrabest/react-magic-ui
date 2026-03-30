@@ -115,6 +115,9 @@ npm run build
 
 # Build the static Storybook site
 npm run build-storybook
+
+# Validate the real demo app against a packed local tarball
+npm run test:demo-consumer
 ```
 
 For a shorter contributor workflow note, see [`worklog/DEV_FLOW.md`](./worklog/DEV_FLOW.md).
