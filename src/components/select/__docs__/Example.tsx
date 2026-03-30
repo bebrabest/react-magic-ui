@@ -23,7 +23,7 @@ const Example: FC<Omit<SelectProps, 'value' | 'onChange'>> = ({
                 padding: "20px",
             }}
         >
-            <div style={{ width: "100%", maxWidth: "400px" }}>
+            <div style={{ width: "min(400px, 100%)" }}>
 
             <Select
                 size={size}
