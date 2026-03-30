@@ -16,14 +16,15 @@ const Example: FC<Omit<SelectProps, 'value' | 'onChange'>> = ({
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                height: "100%",
+                minHeight: "100vh",
+                width: "100%",
                 flexDirection: "column",
                 gap: "20px",
                 padding: "20px",
-                maxWidth: "400px",
-                margin: "0 auto",
             }}
         >
+            <div style={{ width: "100%", maxWidth: "400px" }}>
+
             <Select
                 size={size}
                 disabled={disabled}
@@ -33,6 +34,7 @@ const Example: FC<Omit<SelectProps, 'value' | 'onChange'>> = ({
                 placeholder={placeholder}
                 enableClickAnimation={enableClickAnimation}
             />
+            </div>
             {value && (
                 <div style={{ color: "white", fontSize: "14px" }}>
                     Selected value: {value}
