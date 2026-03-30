@@ -28,6 +28,8 @@ import 'react-magic-ui/style.css'
 
 That stylesheet import is part of the package contract right now. Without it, components render but won't pick up the liquid-glass styling.
 
+The package no longer auto-loads Google Fonts. If you want the original look, load `Nunito` yourself in your app shell, or override `--rmui-font-family` after importing `react-magic-ui/style.css`.
+
 ## Documentation
 
 ### [📚 Live Component Examples in Storybook](https://react-magic-ui-docs.netlify.app/)
