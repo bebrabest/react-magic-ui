@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for your interest in contributing to react-magic-ui!
+Thanks for helping improve react-magic-ui.
 
-## Structure
+## Project shape
 
 Components live in `src/components` and are exported through `src/components/index.ts` and `src/index.ts`.
 
-Typical component layout today:
+Typical component layout:
 
 ```text
 src/components/
@@ -23,25 +23,33 @@ src/components/<component>/__docs__/
   └── <Component>.stories.tsx
 ```
 
-Tests now live alongside components in `src/components/<component>/__test__/**`.
+Tests live alongside components in `src/components/<component>/__test__/**`.
 
-For behavior-heavy or accessibility-sensitive components (for example modal, select, tabs, slider, toast, checkbox, switch, sidebar), contributors should preserve and extend the current keyboard/ARIA contract rather than treating them as visual-only wrappers. When changing those components, add or update regression tests in the colocated `__test__` folder.
+## Quality expectations
+
+For behavior-heavy or accessibility-sensitive components (for example `Modal`, `Select`, `Tabs`, `Slider`, `Toast`, `Checkbox`, `Switch`, `Sidebar`), preserve and extend the current keyboard, focus, and ARIA contract rather than treating them as visual-only wrappers.
+
+If behavior changes, update the colocated regression tests too.
 
 Coverage gaps and audit notes are tracked in `worklog/AUDIT_TESTS.md`.
 
-## Development
+## Local development
+
 ### Clone the repository
+
 ```bash
 git clone https://github.com/tweeedlex/react-magic-ui.git
 cd react-magic-ui
 ```
 
 ### Install dependencies
+
 ```bash
 npm install
 ```
 
 ### Common commands
+
 ```bash
 # Run Storybook locally
 npm run storybook
@@ -62,42 +70,49 @@ npm run build
 npm run build-storybook
 ```
 
-For a concise day-to-day workflow note, see `worklog/DEV_FLOW.md`.
+For the shorter day-to-day workflow, see `worklog/DEV_FLOW.md`.
 
----
+## Consumer-facing package rules
 
-> ⚠️ NOTE 1: Safari and Firefox only partially support the effect (displacement will not be visible).
-> The contributions to improve cross-browser compatibility are welcome.
+Please keep the package contract consistent unless you are intentionally changing it:
 
-> ⚠️ NOTE 2: Consumer apps should import the packaged stylesheet explicitly:
-> `import 'react-magic-ui/style.css'`
+- Consumer apps should import the packaged stylesheet explicitly:
+  `import 'react-magic-ui/style.css'`
+- The library ships compiled CSS already, so consumers should not need Tailwind content-scanning just to get default styling.
+- The published stylesheet should not fetch remote web fonts implicitly.
+- The published stylesheet should not set a package-wide global `font-family` across the consumer app.
+- Components should inherit app typography by default.
+
+If you want the original `Nunito` look in docs/demo or a consuming app, load it there explicitly and/or override `--rmui-font-family` after the stylesheet import.
+
+## Browser support note
+
+> Safari and Firefox only partially support the effect today. The displacement layer is not fully visible there.
 >
-> The library ships compiled CSS already, so consumers should not need to scan library internals with Tailwind just to get the default styling.
+> Cross-browser improvements are welcome.
 
-> ⚠️ NOTE 3: The published stylesheet does not fetch web fonts anymore and it should not set a package-wide `font-family` on the consumer app.
-> Components should inherit the app's typography by default.
-> If you want the original `Nunito` look, load that font in the consuming app (or docs/demo) and/or override `--rmui-font-family` after the stylesheet import.
+## Commit convention
 
-## Commit Convention
-Before you create a Pull Request, please check that your commit messages follow the Conventional Commits specification. This helps maintain a clear and consistent commit history.
+Before opening a pull request, keep commit messages in Conventional Commits style:
 
-https://www.conventionalcommits.org/
+<https://www.conventionalcommits.org/>
 
-### Commit Examples
+Examples:
+
 - `feat: add Dropdown component`
 - `fix: resolve Button hover effect in Safari`
 - `docs: update Card component examples`
 
-## Requests for new components
+## New component requests
 
-If you have a request for a new component, please open a discussion on GitHub. We'll be happy to help you out.
+If you want a new component, open a GitHub discussion first.
 
 ## Testing
 
-Tests are written using [Vitest](https://vitest.dev). You can run all the tests from the root of the repository.
+Tests are written with [Vitest](https://vitest.dev).
 
 ```bash
-npm run test
+npm test
 ```
 
-Please ensure that the tests are passing when submitting a pull request. If you're adding new features, please include tests.
+Please make sure tests pass before submitting a pull request. If you add behavior, add tests with it.
