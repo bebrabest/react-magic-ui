@@ -6,7 +6,7 @@ import * as BadgeStories from "./Badge.stories.tsx";
 
 # Badge
 
-badge component for status tagging with glassmorphism styling.
+Compact status label for tags, small counters, and inline state communication.
 
 #### Example
 
@@ -14,27 +14,35 @@ badge component for status tagging with glassmorphism styling.
 
 ## Usage
 
-```ts
+```tsx
 import "react-magic-ui/style.css";
 import { Badge } from "react-magic-ui";
 
 const Example = () => {
-  return (
-    <Badge variant="positive">
-      active
-    </Badge>
-  );
+  return <Badge variant="positive">Active</Badge>;
 };
 
 export default Example;
 ```
 
-#### Variants
+## Props
 
-- **default** - subtle appearance for neutral information.
-- **positive** - success state such as completed or active.
-- **negative** - error state for failures.
-- **warning** - cautionary messages that need attention.
-- **info** - informational notices.
-- **neutral** - low emphasis state labels.
+- **variant** — Visual tone for the badge: `"default"`, `"positive"`, `"negative"`, `"warning"`, `"info"`, or `"neutral"`.
+- **leadingIcon** / **trailingIcon** — Decorative icon slots rendered before or after the label.
+- **children** — Visible badge content, usually a short status word or count.
+- Native `span` props and shared `Glass` props are forwarded through to the root element.
 
+## Behavior notes
+
+- `Badge` renders as a `span` by default, so it is best used for inline annotation rather than interactive actions.
+- Leading and trailing icon wrappers are marked `aria-hidden`, which keeps decorative icons from being announced twice.
+- Keep badge copy short. For longer explanations, pair the badge with surrounding text instead of cramming detail into the label itself.
+
+## Variant guidance
+
+- **default** — neutral styling for general metadata.
+- **positive** — success, healthy, or active states.
+- **negative** — failure, danger, or destructive states.
+- **warning** — cautionary states that need attention soon.
+- **info** — informational or secondary notices.
+- **neutral** — low-emphasis labels that should stay visually quiet.

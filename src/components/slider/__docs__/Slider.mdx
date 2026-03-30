@@ -1,53 +1,57 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
 import Example from "./Example.tsx";
-import * as Slider from "./Slider.stories.tsx";
+import * as SliderStories from "./Slider.stories.tsx";
 
-<Meta of={Slider} title="Slider" />
+<Meta of={SliderStories} title="Slider" />
 
 # Slider
 
-Slider component for selecting a numeric value within a range.
+Numeric slider for compact value selection with keyboard support, click/drag interaction, and an optional inline value readout.
 
 #### Example
 
-<Canvas of={Slider.Default}/>
+<Canvas of={SliderStories.Default} />
 
 ## Usage
 
-```ts
-import "react-magic-ui/style.css";
-import {Slider} from "react-magic-ui";
+```tsx
 import { useState } from "react";
+import "react-magic-ui/style.css";
+import { Slider } from "react-magic-ui";
 
 const Example = () => {
   const [value, setValue] = useState(50);
 
   return (
-      <Slider
-        size={"medium"}
-        disabled={false}
-        min={0}
-        max={100}
-        step={1}
-        value={value}
-        onChange={setValue}
-        showValue={false}
-        enableClickAnimation={true}
-      />
+    <Slider
+      aria-label="Volume"
+      min={0}
+      max={100}
+      step={5}
+      value={value}
+      onChange={setValue}
+      showValue
+    />
   );
 };
 
 export default Example;
 ```
 
-#### Arguments
+## Props
 
-- **disabled** - A boolean indicating whether the Slider should be disabled or not. When disabled, the Slider cannot be clicked or dragged.
-- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the Slider.
-- **min** - A number representing the minimum value of the Slider. Defaults to 0.
-- **max** - A number representing the maximum value of the Slider. Defaults to 100.
-- **step** - A number representing the increment step for the Slider value. Defaults to 1.
-- **value** - A number representing the current value of the Slider. Use this to control the Slider component.
-- **onChange** - A function that receives the new value as a number parameter. It is called when the user drags the slider or clicks on the track.
-- **showValue** - A boolean indicating whether to display the current value of the Slider. Defaults to false.
-- **enableClickAnimation** - A boolean indicating whether to enable the liquid bounce animation on click
+- **value** — Controlled value for the slider thumb position.
+- **onChange** — Called with the next numeric value after click, drag, or keyboard interaction.
+- **min** / **max** — Range bounds. If `max` is lower than `min`, the component safely clamps to the minimum range.
+- **step** — Increment size for keyboard and pointer updates. Non-positive values fall back to `1`.
+- **size** — Visual size preset: `"small"`, `"medium"`, or `"large"`.
+- **showValue** — Displays the current numeric value next to the slider.
+- **disabled** — Prevents focus and interaction.
+- **enableClickAnimation** — Reserved for the visual click treatment used by the component family.
+
+## Behavior notes
+
+- The slider exposes `role="slider"` with `aria-valuemin`, `aria-valuemax`, and `aria-valuenow` so assistive tech gets the current value.
+- Keyboard users can adjust the value with `Arrow` keys, jump with `PageUp` / `PageDown`, and move directly to bounds with `Home` / `End`.
+- Add `aria-label`, `aria-labelledby`, or `aria-valuetext` when the surrounding UI does not already make the control's meaning obvious.
+- `Slider` is controlled today: keep the current value in parent state and update it in `onChange`.

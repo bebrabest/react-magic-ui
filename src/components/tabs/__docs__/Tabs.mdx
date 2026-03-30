@@ -6,7 +6,7 @@ import * as TabsStories from "./Tabs.stories.tsx";
 
 # Tabs
 
-Accessible glassmorphism tabs with keyboard navigation and compound subcomponents.
+Accessible glassmorphism tabs with compound subcomponents, keyboard navigation, and support for both automatic and manual activation.
 
 #### Example
 
@@ -14,28 +14,22 @@ Accessible glassmorphism tabs with keyboard navigation and compound subcomponent
 
 ## Usage
 
-```ts
+```tsx
 import "react-magic-ui/style.css";
 import { Tabs } from "react-magic-ui";
 
 const Example = () => {
   return (
     <Tabs defaultValue="overview">
-      <Tabs.List>
+      <Tabs.List aria-label="Project sections">
         <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
         <Tabs.Trigger value="analytics">Analytics</Tabs.Trigger>
         <Tabs.Trigger value="settings">Settings</Tabs.Trigger>
       </Tabs.List>
 
-      <Tabs.Content value="overview">
-        Overview content
-      </Tabs.Content>
-      <Tabs.Content value="analytics">
-        Analytics content
-      </Tabs.Content>
-      <Tabs.Content value="settings">
-        Settings content
-      </Tabs.Content>
+      <Tabs.Content value="overview">Overview content</Tabs.Content>
+      <Tabs.Content value="analytics">Analytics content</Tabs.Content>
+      <Tabs.Content value="settings">Settings content</Tabs.Content>
     </Tabs>
   );
 };
@@ -43,12 +37,30 @@ const Example = () => {
 export default Example;
 ```
 
-#### Arguments
+## Props
 
-- **value** - Controlled value that specifies the active tab. Combine with `onValueChange`.
-- **defaultValue** - Sets the initially active tab in uncontrolled mode.
-- **onValueChange** - Callback fired when the active tab changes.
-- **activationMode** - Determines whether tabs activate on focus (`"auto"`) or require a click (`"manual"`).
-- **orientation** - Display tabs horizontally or vertically.
-*** End Patch
+### `Tabs`
 
+- **value** — Controlled active tab value.
+- **defaultValue** — Initial active tab in uncontrolled mode.
+- **onValueChange** — Called whenever the active tab changes.
+- **activationMode** — `"auto"` activates on focus; `"manual"` keeps focus movement separate from selection until click.
+- **orientation** — `"horizontal"` or `"vertical"` keyboard/navigation layout.
+
+### `Tabs.Trigger`
+
+- **value** — Unique value that links the trigger to its matching content panel.
+- Standard button props such as `disabled` are forwarded.
+
+### `Tabs.Content`
+
+- **value** — Value of the trigger this panel belongs to.
+- **lazyMount** — Defers rendering until the panel becomes active.
+
+## Behavior notes
+
+- `Tabs.List` exposes proper `tablist` semantics and each trigger/content pair is wired with `aria-controls` / `aria-labelledby`.
+- Arrow-key behavior follows the chosen orientation. `Home` and `End` move focus to the first and last enabled triggers.
+- Disabled triggers stay in the DOM but are skipped by keyboard roving focus.
+- In `activationMode="auto"`, moving focus with the keyboard also activates the newly focused tab. In `"manual"`, focus moves first and activation happens only on click.
+- Prefer concise trigger labels and keep each `value` stable; changing values dynamically will break trigger/panel associations.
