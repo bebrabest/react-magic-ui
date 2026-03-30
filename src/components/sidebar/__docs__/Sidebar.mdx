@@ -12,6 +12,10 @@ Sidebar with glassmorphism styling that exposes a compound component API.
 
 <Canvas of={SidebarStories.Default} />
 
+## a11y notes
+
+- when the sidebar is collapsed and an item is effectively icon-only, make sure the item still has an accessible name (either string children or an explicit `aria-label`)
+
 ## Usage
 
 ```tsx
