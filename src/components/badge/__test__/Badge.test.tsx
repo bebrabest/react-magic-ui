@@ -1,38 +1,51 @@
-import React from "react";
+import React, { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import Badge from "../Badge";
 
 describe("Badge component", () => {
-  it("renders children text content", () => {
-    render(<Badge>active</Badge>);
-    expect(screen.getByText("active")).toBeInTheDocument();
-  });
+  it("renders badge content inside a span", () => {
+    render(<Badge>stable</Badge>);
 
-  it("applies default variant classes", () => {
-    render(<Badge>default</Badge>);
-    const badge = screen.getByText("default");
+    const badge = screen.getByText("stable");
+    expect(badge.tagName).toBe("SPAN");
     expect(badge.className).toContain("badge");
   });
 
-  it("applies specific variant classes", () => {
-    render(<Badge variant="positive">done</Badge>);
-    const badge = screen.getByText("done");
-    expect(badge.className).toContain("bg-positive");
+  it("applies the requested variant class", () => {
+    render(<Badge variant="info">info badge</Badge>);
+
+    expect(screen.getByText("info badge").className).toContain("bg-info");
   });
 
-  it("renders leading and trailing icons", () => {
+  it("renders decorative leading and trailing icons as aria-hidden", () => {
     render(
       <Badge
-        leadingIcon={<span data-testid="leading">L</span>}
-        trailingIcon={<span data-testid="trailing">R</span>}
+        leadingIcon={<svg data-testid="leading-icon" />}
+        trailingIcon={<svg data-testid="trailing-icon" />}
       >
-        icon badge
+        updates
       </Badge>,
     );
 
-    expect(screen.getByTestId("leading")).toBeInTheDocument();
-    expect(screen.getByTestId("trailing")).toBeInTheDocument();
+    expect(screen.getByTestId("leading-icon").parentElement).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("trailing-icon").parentElement).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("forwards refs to the rendered badge element", () => {
+    const ref = createRef<HTMLSpanElement>();
+    render(<Badge ref={ref}>ref badge</Badge>);
+
+    expect(ref.current).toBe(screen.getByText("ref badge"));
+  });
+
+  it("passes through native span attributes", () => {
+    render(
+      <Badge data-testid="badge" title="release ready">
+        ready
+      </Badge>,
+    );
+
+    expect(screen.getByTestId("badge")).toHaveAttribute("title", "release ready");
   });
 });
-

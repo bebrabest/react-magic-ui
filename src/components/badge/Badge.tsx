@@ -46,9 +46,17 @@ const Badge: React.FC<BadgeProps> = ({
       rootClassName={"rounded-full"}
       {...props}
     >
-      {leadingIcon && <span className={styles.badge__icon}>{leadingIcon}</span>}
+      {leadingIcon && (
+        <span aria-hidden="true" className={styles.badge__icon}>
+          {leadingIcon}
+        </span>
+      )}
       {children}
-      {trailingIcon && <span className={styles.badge__icon}>{trailingIcon}</span>}
+      {trailingIcon && (
+        <span aria-hidden="true" className={styles.badge__icon}>
+          {trailingIcon}
+        </span>
+      )}
     </Glass>
   );
 };
