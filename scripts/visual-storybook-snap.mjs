@@ -30,6 +30,7 @@ const targetSpecs = [
   { name: 'toast-playground', title: 'Toast', story: 'Playground' },
   { name: 'modal-default', title: 'Modal', story: 'Default' },
   { name: 'sidebar-default', title: 'Sidebar', story: 'Default' },
+  { name: 'topbar-default', title: 'Topbar', story: 'Default' },
 ];
 
 async function sleep(ms) {
