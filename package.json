@@ -57,7 +57,8 @@
     "test-watch": "vitest",
     "test:ui": "vitest --ui",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "visual:snap": "node scripts/visual-storybook-snap.mjs"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.2",
