@@ -140,6 +140,16 @@ async function runSmoke(browser) {
     }
   });
 
+  await step('input accepts typed text in the packaged demo', async () => {
+    const input = page.getByPlaceholder('Small input...');
+    await input.focus();
+    await input.fill('packed demo smoke');
+    await page.waitForFunction(() => {
+      const element = document.activeElement;
+      return element instanceof HTMLInputElement && element.placeholder === 'Small input...' && element.value === 'packed demo smoke';
+    });
+  });
+
   await step('modal opens and closes with escape', async () => {
     await page.getByRole('button', { name: /open modal/i }).click();
     await page.getByRole('dialog', { name: /glass modal/i }).waitFor({ state: 'visible' });
