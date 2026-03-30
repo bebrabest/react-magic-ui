@@ -131,6 +131,45 @@ async function waitForStableStory(page) {
   await page.waitForTimeout(750);
 }
 
+async function captureShot(page, filepath) {
+  await page.screenshot({ path: filepath, fullPage: true });
+}
+
+async function applyInteractionState(page, target) {
+  switch (target.name) {
+    case 'select-default': {
+      const combobox = page.getByRole('combobox');
+      await combobox.click();
+      await page.getByRole('option', { name: 'Option 3' }).click();
+      await page.getByText('Selected value: option3').waitFor({ timeout: 5_000 });
+      return ['selected-option3'];
+    }
+
+    case 'tabs-default': {
+      await page.getByRole('tab', { name: 'Analytics' }).click();
+      await page.getByText('Dive into interactive charts, trend analysis, and comparison reports').waitFor({
+        timeout: 5_000,
+      });
+      return ['analytics-active'];
+    }
+
+    case 'toast-playground': {
+      await page.getByRole('button', { name: 'Show error' }).click();
+      await page.getByRole('alert').waitFor({ timeout: 5_000 });
+      return ['error-toast-open'];
+    }
+
+    case 'modal-default': {
+      await page.getByRole('button', { name: 'Open modal' }).click();
+      await page.getByRole('dialog', { name: 'Glass modal' }).waitFor({ timeout: 5_000 });
+      return ['dialog-open'];
+    }
+
+    default:
+      return [];
+  }
+}
+
 async function main() {
   await fs.mkdir(outDir, { recursive: true });
 
@@ -148,6 +187,7 @@ async function main() {
     });
 
     const pwLogs = [`[info] story index loaded from ${storyIndexUrl}`];
+    const captures = [];
 
     for (const t of targets) {
       const page = await browser.newPage({
@@ -165,19 +205,32 @@ async function main() {
 
       await page.goto(t.url, { waitUntil: 'domcontentloaded' });
       await waitForStableStory(page);
-      await page.screenshot({ path: path.join(outDir, `${t.name}.png`), fullPage: true });
+
+      const baseFile = `${t.name}.png`;
+      await captureShot(page, path.join(outDir, baseFile));
+      captures.push({ target: t.name, state: 'base', file: baseFile });
+
+      const interactionStates = await applyInteractionState(page, t);
+      for (const state of interactionStates) {
+        await page.waitForTimeout(300);
+        const file = `${t.name}--${state}.png`;
+        await captureShot(page, path.join(outDir, file));
+        captures.push({ target: t.name, state, file });
+      }
+
       await page.close();
     }
 
     await fs.writeFile(path.join(outDir, 'playwright-log.txt'), pwLogs.join('\n') + '\n');
     await fs.writeFile(path.join(outDir, 'targets.json'), JSON.stringify(targets, null, 2) + '\n');
+    await fs.writeFile(path.join(outDir, 'captures.json'), JSON.stringify(captures, null, 2) + '\n');
     await browser.close();
 
     const storybookLog = sbLogs.join('');
     await fs.writeFile(path.join(outDir, 'storybook-log.txt'), storybookLog);
 
     const files = await fs.readdir(outDir);
-    console.log(JSON.stringify({ outDir, files }, null, 2));
+    console.log(JSON.stringify({ outDir, files, captures }, null, 2));
   } finally {
     const waitExit = new Promise(resolve => child.once('exit', resolve));
     try {
