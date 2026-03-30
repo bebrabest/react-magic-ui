@@ -1,48 +1,51 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
-import Example from "./Example.tsx";
 import * as Card from "./Card.stories.tsx";
 
-<Meta of={Card} title="Card"/>
+<Meta of={Card} title="Card" />
 
 # Card
 
-Card component with different props.
+`Card` is a flexible content container built on top of `Glass`. Use it when you want the library's visual shell plus simple layout controls for stacking or aligning content.
 
-#### Example
+## Example
 
 <Canvas of={Card.Default} />
 
 ## Usage
 
-```ts
+```tsx
 import "react-magic-ui/style.css";
 import { Card } from "react-magic-ui";
 
-const Example = () => {
+export function Example() {
   return (
-      <Card
-        size={"small"}
-        direction={"column"}
-        align={"start"}
-        justify={"start"}
-      >
-        <h1>Title</h1>
-        <h2>Subtitle</h2>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec
-          vehicula, sapien nec consectetur aliquam, turpis ex tincidunt
-          turpis, sed facilisis eros libero a purus.
-        </p>
-      </Card>
+    <Card size="medium" direction="column" align="start" justify="start">
+      <h2>Project status</h2>
+      <p>Everything important at a glance.</p>
+    </Card>
   );
-};
-
-export default Example;
+}
 ```
 
-#### Arguments
+## Props
 
-- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the Card.
-- **direction** - A string with one of two possible values: "row" or "column." It defines the direction of the Card.
-- **align** - A string with one of five possible values: "start," "end," "center," "baseline," or "stretch." It defines the alignment of the Card.
-- **justify** - A string with one of five possible values: "start," "end," "center," "between," or "around." It defines the justification of the Card.
+- **children** _`React.ReactNode`_ — Card content.
+- **size** _`"small" | "medium" | "large"`_ — Controls padding and overall density.
+- **direction** _`"column" | "row"`_ — Controls layout flow inside the card.
+- **align** _`"center" | "start" | "end"`_ — Cross-axis alignment.
+- **justify** _`"center" | "start" | "end" | "space-between" | "space-around"`_ — Main-axis distribution.
+- **className** _`string`_ — Additional classes for the content wrapper.
+- `Card` also accepts the shared `Glass` container props like **rootClassName** and **rootStyle**, plus standard HTML `div` attributes.
+
+## Behavior notes
+
+- `Card` is mostly presentational; it does not add landmark or interactive semantics on its own.
+- If the card acts like a section, article, or clickable surface, provide the appropriate element/ARIA semantics yourself.
+- Because it inherits from `Glass`, visual styling stays consistent with other library primitives.
+
+## Good fits
+
+- Dashboard summary panels
+- Settings groups
+- Marketing blocks or feature callouts
+- Lightweight wrappers around form sections

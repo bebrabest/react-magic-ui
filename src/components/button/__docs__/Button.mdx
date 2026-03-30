@@ -1,47 +1,53 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
-import Example from "./Example.tsx";
 import * as Button from "./Button.stories.tsx";
 
 <Meta of={Button} title="Button" />
 
 # Button
 
-Button component with different props.
+`Button` is the opinionated action primitive in `react-magic-ui`: glass styling by default, optional click animation, and native button behavior underneath.
 
-#### Example
+## Example
 
 <Canvas of={Button.Default} />
 
 ## Usage
 
-```ts
+```tsx
 import "react-magic-ui/style.css";
 import { Button } from "react-magic-ui";
 
-const Example = () => {
+export function Example() {
   return (
-      <Button
-        onClick={()=> console.log("Clicked")}
-        variant={"default"}
-        size={"medium"}
-      >
-        Click me!
-      </Button>
+    <Button type="submit" variant="positive" size="medium">
+      Save changes
+    </Button>
   );
-};
-
-
-export default Example;
+}
 ```
 
-#### Arguments
+## Props
 
-- **text** _`string`_ - A string that represents the text content of the button.
-- **children** _`React.ReactNode`_ - Content to render inside the button. Takes priority over `text` prop if both are provided.
-- **variant** _`"default" | "positive" | "negative" | "warning"`_ - The visual style variant of the button. Uses colors from tailwind.config.
-- **disabled** _`boolean`_ - A boolean indicating whether the button should be disabled or not. When disabled, the button cannot be clicked or interacted with.
-- **size** _`"small" | "medium" | "large"`_ - Defines the size or dimensions of the button. Default is `"medium"`.
-- **rounded** _`boolean`_ - Makes the button circular. When true, the button will have a 1:1 aspect ratio with rounded corners. Default is `false`.
-- **onClick** _`(event: React.MouseEvent<HTMLButtonElement>) => void`_ - A function that is called when the button is clicked.
-- **enableClickAnimation** _`boolean`_ - A boolean indicating whether to enable the liquid bounce animation on click. Default is `true`.
-- **className** _`string`_ - Additional CSS classes to apply to the button.
+- **children** _`React.ReactNode`_ — Preferred button content. If both `children` and `text` are provided, `children` wins.
+- **text** _`string`_ — Convenience text prop for simple buttons.
+- **variant** _`"default" | "positive" | "negative" | "warning"`_ — Visual color treatment.
+- **size** _`"small" | "medium" | "large"`_ — Control height and padding.
+- **type** _`"button" | "submit" | "reset"`_ — Preserved and forwarded to the native button element. Defaults to `"button"`.
+- **disabled** _`boolean`_ — Disables interaction and click animation.
+- **rounded** _`boolean`_ — Renders the button with the rounded/circular treatment.
+- **enableClickAnimation** _`boolean`_ — Enables the liquid click animation. Defaults to `true`.
+- **className** _`string`_ — Additional classes applied to the interactive button element.
+- **rootClassName / rootStyle** — Glass container customization inherited from `Glass`.
+- Any other native button props like `aria-*`, `name`, or `value` are forwarded.
+
+## Behavior notes
+
+- `Button` renders a real `<button>`, so it works with forms, keyboard activation, and standard button semantics.
+- Use `type="submit"` or `type="reset"` when the button lives inside a form — the component no longer forces everything to `type="button"`.
+- For icon-only actions, add an accessible name with `aria-label`.
+
+## When to use it
+
+- Primary and secondary page actions
+- Form submit/reset controls
+- Toolbar or card actions where the glass visual style should stay consistent

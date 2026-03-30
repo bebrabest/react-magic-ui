@@ -1,171 +1,91 @@
-import { Canvas, Meta } from '@storybook/addon-docs/blocks';
-import * as GlassStories from './Glass.stories';
+import { Canvas, Meta } from "@storybook/addon-docs/blocks";
+import * as GlassStories from "./Glass.stories";
 
-<Meta of={GlassStories} />
+<Meta of={GlassStories} title="Glass" />
 
 # Glass
 
-A beautiful glass morphism component with optional liquid animation effects.
+`Glass` is the visual foundation of the library: a polymorphic glass-morphism wrapper with optional liquid ripple animation.
 
-## Features
+## Example
 
-- **Glass Morphism Effect**: Creates a frosted glass appearance with blur and transparency
-- **Liquid Animation**: Interactive click-based liquid ripple effect
-- **Programmatic Animation**: Trigger animations programmatically via props
-- **Polymorphic Component**: Render as any HTML element using the `as` prop
-- **Customizable**: Full control over styles and animations
+<Canvas of={GlassStories.Default} />
 
-## Basic Usage
+## Usage
 
 ```tsx
 import "react-magic-ui/style.css";
-import Glass from "react-magic-ui";
+import { Glass } from "react-magic-ui";
 
-function App() {
+export function Example() {
   return (
     <Glass>
-      <h2>Glass Effect Content</h2>
-      <p>Beautiful glass morphism design</p>
+      <h2>Glass effect content</h2>
+      <p>Beautiful glass morphism design.</p>
     </Glass>
   );
 }
 ```
 
-## Examples
+## Core features
 
-### Default Glass Effect
+- **Glass morphism shell** — frosted background, highlight, and blur layers.
+- **Optional liquid animation** — click-triggered ripple effect.
+- **Programmatic animation** — trigger a centered ripple with `triggerAnimation`.
+- **Polymorphic rendering** — render as any element with the `as` prop.
+- **Container customization** — style the outer shell separately from the content node.
 
-<Canvas of={GlassStories.Default} />
+## More examples
 
-Basic glass morphism effect without animations.
-
-### With Liquid Animation
+### With liquid animation
 
 <Canvas of={GlassStories.WithLiquidAnimation} />
 
-Click on the glass component to see the liquid animation effect. The ripple originates from where you click.
-
-### Programmatic Animation
+### Programmatic animation
 
 <Canvas of={GlassStories.ProgrammaticAnimation} />
 
-Animation triggered programmatically via the `triggerAnimation` prop. The ripple appears at the center.
-
-### Custom Content
+### Custom content
 
 <Canvas of={GlassStories.CustomContent} />
 
-Customize the appearance with custom styles and content.
-
-### As Button Element
+### As button element
 
 <Canvas of={GlassStories.AsButton} />
 
-Render the glass component as a button element with full interactivity.
-
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `as` | `ElementType` | `"div"` | The HTML element to render as |
-| `children` | `React.ReactNode` | - | Content to display inside the glass component |
-| `rootClassName` | `string` | - | Additional CSS class for the root container |
-| `rootStyle` | `React.CSSProperties` | - | Inline styles for the root container |
-| `enableLiquidAnimation` | `boolean` | `false` | Enable click-based liquid animation effect |
-| `triggerAnimation` | `boolean` | `false` | Programmatically trigger liquid animation |
-| `className` | `string` | - | CSS class for the content wrapper |
-| `onClick` | `function` | - | Click handler (works with or without liquid animation) |
+- **as** _`ElementType`_ — Element to render for the interactive/content node. Defaults to `"div"`.
+- **children** _`React.ReactNode`_ — Content rendered inside the glass wrapper.
+- **className** _`string`_ — Classes applied to the inner rendered element.
+- **rootClassName** _`string`_ — Classes applied to the outer glass container.
+- **rootStyle** _`React.CSSProperties`_ — Inline styles for the outer glass container.
+- **enableLiquidAnimation** _`boolean`_ — Enables click-based ripple animation. Defaults to `false`.
+- **triggerAnimation** _`boolean`_ — Starts a centered ripple when toggled to `true`.
+- Native props for the chosen `as` element, including `onClick`, `aria-*`, and other HTML attributes, are forwarded.
 
-## Advanced Usage
+## Behavior notes
 
-### Polymorphic Usage
+- `Glass` is visual first. It does **not** automatically make a surface accessible or interactive — choose a semantic `as` value like `button` or `section` when that matters.
+- If you render `as="button"`, provide the same accessibility treatment you would for any normal button, including an accessible name when needed.
+- The outer shell and inner content are separate on purpose: use `rootClassName` / `rootStyle` for shell-level layout and `className` for content-level styling.
 
-```tsx
-// As a div (default)
-<Glass>Content</Glass>
+## CSS variables
 
-// As a button
-<Glass as="button" onClick={handleClick}>
-  Click Me
-</Glass>
-
-// As a section
-<Glass as="section">
-  <h1>Section Title</h1>
-</Glass>
-```
-
-### With Custom Styles
-
-```tsx
-<Glass
-  rootClassName="custom-glass"
-  rootStyle={{
-    padding: "40px",
-    borderRadius: "16px",
-    minHeight: "300px",
-  }}
->
-  <h2>Customized Glass</h2>
-</Glass>
-```
-
-### Controlled Animation
-
-```tsx
-function AnimatedGlass() {
-  const [animate, setAnimate] = useState(false);
-
-  const handleTrigger = () => {
-    setAnimate(true);
-    setTimeout(() => setAnimate(false), 100);
-  };
-
-  return (
-    <>
-      <button onClick={handleTrigger}>Trigger Animation</button>
-      <Glass triggerAnimation={animate}>
-        <h2>Controlled Animation</h2>
-      </Glass>
-    </>
-  );
-}
-```
-
-## CSS Variables
-
-You can customize the glass appearance using CSS variables:
+You can tune the default visual treatment with CSS variables:
 
 ```css
 :root {
-  --lg-bg-color: rgba(255, 255, 255, 0.10);
+  --lg-bg-color: rgba(255, 255, 255, 0.1);
   --lg-highlight: rgba(255, 255, 255, 0.25);
   --lg-text: #ffffff;
   --lg-hover-glow: rgba(255, 255, 255, 0.2);
 }
 ```
 
-## Animation Details
+## Best practices
 
-The liquid animation includes:
-- **Squish Effect**: Container squishes in a liquid-like motion
-- **Ripple Effect**: Radial ripple spreads from click point
-- **Distortion**: SVG filter creates organic distortion
-- **Glow Effect**: Specular highlights intensify during animation
-
-Duration: 800ms with custom cubic-bezier easing
-
-## Accessibility
-
-- Use semantic HTML elements via the `as` prop
-- Ensure sufficient color contrast for text content
-- Add appropriate ARIA attributes when needed
-- Consider reduced motion preferences for animations
-
-## Best Practices
-
-1. Use on colorful or gradient backgrounds for best visual effect
-2. Keep content readable by ensuring proper contrast
-3. Use `enableLiquidAnimation` sparingly for interactive elements
-4. Consider performance when using multiple animated instances
-5. Provide fallback styles for browsers without backdrop-filter support
+1. Use it on colorful, textured, or gradient backgrounds where the glass treatment can actually read.
+2. Keep text contrast high enough to stay readable through the blur/transparency effect.
+3. Use liquid animation selectively — it looks nice, but too many animated surfaces get noisy fast.
+4. Prefer semantic elements via `as` instead of bolting on click handlers to anonymous `div`s.

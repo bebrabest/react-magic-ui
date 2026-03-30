@@ -1,44 +1,55 @@
 import { Canvas, Meta } from "@storybook/addon-docs/blocks";
-import Example from "./Example.tsx";
 import * as Input from "./Input.stories.tsx";
 
 <Meta of={Input} title="Input" />
 
 # Input
 
-Input component with different props.
+`Input` is the library's styled text-entry primitive. It keeps the glass shell, forwards refs to the native `<input>`, and preserves standard HTML input behavior.
 
-#### Example
+## Example
 
 <Canvas of={Input.Default} />
 
 ## Usage
 
-```ts
+```tsx
 import "react-magic-ui/style.css";
 import { Input } from "react-magic-ui";
 import { useState } from "react";
 
-const Example = () => {
+export function Example() {
   const [value, setValue] = useState("");
 
   return (
-      <Input
-        size={"small"}
-        onChange={(e) => setValue(previousValue => e.target.value)}
-        placeholder={"Type something..."}
-        value={value}
-      />
+    <Input
+      type="password"
+      size="medium"
+      placeholder="Enter your password"
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+    />
   );
-};
-
-export default Example;
+}
 ```
 
-#### Arguments
+## Props
 
-- **disabled** - A boolean indicating whether the Input should be disabled or not. When disabled, the Input cannot be interacted with.
-- **size** - A string with one of three possible values: "small," "medium," or "large." It defines the size or dimensions of the Input.
-- **placeholder** - A string that represents the placeholder text of the Input.
-- **onChange** _`() => void`_ - A function that is called when the value of the Input changes.
-- **enableClickAnimation** - A boolean indicating whether to enable the liquid bounce animation on click
+- **size** _`"small" | "medium" | "large"`_ — Control height and spacing.
+- **enableClickAnimation** _`boolean`_ — Enables the surrounding glass click animation. Defaults to `true`.
+- **type** _`React.HTMLInputTypeAttribute`_ — Forwarded to the native input. Defaults to `"text"`, but values like `password`, `email`, and `number` are preserved.
+- **disabled** _`boolean`_ — Disables the native input.
+- **className** _`string`_ — Additional classes for the input element.
+- Native input props such as `value`, `defaultValue`, `onChange`, `placeholder`, `name`, `autoComplete`, `aria-*`, and `required` are forwarded.
+
+## Behavior notes
+
+- Refs point at the real `<input>`, so focus management and form-library integration work as expected.
+- Because this wraps a native input, labels should be provided the normal HTML way with `<label htmlFor="...">` or `aria-label` / `aria-labelledby`.
+- The component no longer forces `type="text"`, so specialized input modes are safe to use.
+
+## Good fits
+
+- Auth forms
+- Search or filter controls
+- Settings panels where consistent glass styling matters
