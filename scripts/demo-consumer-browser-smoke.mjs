@@ -113,6 +113,33 @@ async function runSmoke(browser) {
     }
   });
 
+  await step('switch and checkbox toggle with keyboard', async () => {
+    const smallSwitch = page.getByRole('switch').first();
+    await smallSwitch.focus();
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-checked') === 'true');
+
+    const smallCheckbox = page.getByRole('checkbox', { name: /^small$/i });
+    await smallCheckbox.focus();
+    await page.keyboard.press('Space');
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-checked') === 'true');
+  });
+
+  await step('slider responds to keyboard changes', async () => {
+    const slider = page.getByRole('slider').first();
+    await slider.focus();
+    const before = Number(await slider.getAttribute('aria-valuenow'));
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'slider' && Number(active.getAttribute('aria-valuenow')) > 50;
+    });
+    const after = Number(await slider.getAttribute('aria-valuenow'));
+    if (!(after > before)) {
+      throw new Error(`slider value did not increase (before=${before}, after=${after})`);
+    }
+  });
+
   await step('modal opens and closes with escape', async () => {
     await page.getByRole('button', { name: /open modal/i }).click();
     await page.getByRole('dialog', { name: /glass modal/i }).waitFor({ state: 'visible' });
@@ -123,6 +150,12 @@ async function runSmoke(browser) {
   await step('tabs switch visible content', async () => {
     await page.getByRole('tab', { name: /^pricing$/i }).click();
     await page.getByText(/free & open source/i).waitFor({ state: 'visible' });
+  });
+
+  await step('topbar keeps key external actions visible', async () => {
+    await page.getByRole('link', { name: /github/i }).waitFor({ state: 'visible' });
+    await page.getByRole('link', { name: /get started/i }).waitFor({ state: 'visible' });
+    await page.getByText(/^v(?:\d+|1\.x\.x)/i).waitFor({ state: 'visible' });
   });
 
   await step('toast can be shown and cleared', async () => {
