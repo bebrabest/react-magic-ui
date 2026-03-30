@@ -52,6 +52,13 @@ function startPreview() {
   return { child, logs };
 }
 
+async function expectTextIncludes(locator, expectedText) {
+  const text = await locator.textContent();
+  if (!text || !text.includes(expectedText)) {
+    throw new Error(`expected text to include ${JSON.stringify(expectedText)} but got ${JSON.stringify(text)}`);
+  }
+}
+
 async function runSmoke(browser) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1100 },
@@ -150,11 +157,30 @@ async function runSmoke(browser) {
     });
   });
 
-  await step('modal opens and closes with escape', async () => {
-    await page.getByRole('button', { name: /open modal/i }).click();
-    await page.getByRole('dialog', { name: /glass modal/i }).waitFor({ state: 'visible' });
+  await step('modal opens, traps focus, and restores trigger focus on escape', async () => {
+    const openModalButton = page.getByRole('button', { name: /open modal/i });
+    await openModalButton.focus();
+    await page.keyboard.press('Enter');
+
+    const dialog = page.getByRole('dialog', { name: /glass modal/i });
+    await dialog.waitFor({ state: 'visible' });
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLElement && active.closest('[role="dialog"]') !== null;
+    });
+
+    await page.keyboard.press('Tab');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLElement && active.closest('[role="dialog"]') !== null;
+    });
+
     await page.keyboard.press('Escape');
-    await page.getByRole('dialog', { name: /glass modal/i }).waitFor({ state: 'hidden' });
+    await dialog.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLButtonElement && /open modal/i.test(active.textContent ?? '');
+    });
   });
 
   await step('tabs switch visible content', async () => {
@@ -168,11 +194,56 @@ async function runSmoke(browser) {
     await page.getByText(/^v(?:\d+|1\.x\.x)/i).waitFor({ state: 'visible' });
   });
 
-  await step('toast can be shown and cleared', async () => {
+  await step('toast variants expose the expected live-region semantics and can be cleared', async () => {
     await page.getByRole('button', { name: /^success$/i }).click();
-    await page.getByRole('status').waitFor({ state: 'visible' });
+    const successToast = page.getByRole('status');
+    await successToast.waitFor({ state: 'visible' });
+    await expectTextIncludes(successToast, 'Success!');
+
+    await page.getByRole('button', { name: /^error$/i }).click();
+    const errorToast = page.getByRole('alert');
+    await errorToast.waitFor({ state: 'visible' });
+    await expectTextIncludes(errorToast, 'Error');
+
     await page.getByRole('button', { name: /clear all/i }).click();
-    await page.getByRole('status').waitFor({ state: 'hidden' });
+    await successToast.waitFor({ state: 'hidden' });
+    await errorToast.waitFor({ state: 'hidden' });
+  });
+
+  await step('select and input keep their consumer-controlled values together', async () => {
+    const combobox = page.locator('#inputs').getByRole('combobox').first();
+    await combobox.focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'combobox' && /vue|angular|svelte|react/i.test(active.textContent ?? '') && !/small select/i.test(active.textContent ?? '');
+    });
+
+    const input = page.getByPlaceholder('Small input...');
+    await input.focus();
+    await input.fill('combined flow');
+
+    const state = await page.evaluate(() => {
+      const inputEl = document.querySelector('input[placeholder="Small input..."]');
+      const comboEl = document.activeElement?.getAttribute('role') === 'combobox'
+        ? document.activeElement
+        : document.querySelector('#inputs [role="combobox"]');
+
+      return {
+        inputValue: inputEl instanceof HTMLInputElement ? inputEl.value : null,
+        selectText: comboEl?.textContent?.trim() ?? null,
+      };
+    });
+
+    if (state.inputValue !== 'combined flow') {
+      throw new Error(`input lost controlled value (value=${JSON.stringify(state.inputValue)})`);
+    }
+
+    if (!state.selectText || /small select/i.test(state.selectText)) {
+      throw new Error(`select lost chosen value during combined form flow (text=${JSON.stringify(state.selectText)})`);
+    }
   });
 
   return { page, results, pwLogs };
