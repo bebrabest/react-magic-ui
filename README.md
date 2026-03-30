@@ -15,9 +15,9 @@ Here you can mess with the components. Enjoy!
 
 ## Installation
 
-1. Install the library using npm: 
+1. Install the library and its React peer dependencies:
 ```bash
-npm install react-magic-ui
+npm install react react-dom react-magic-ui
 ```
 
 2. Import the library stylesheet once in your app entry (for example `main.tsx`, `index.tsx`, or `App.tsx`):
@@ -27,6 +27,8 @@ import 'react-magic-ui/style.css'
 ```
 
 That stylesheet import is part of the package contract right now. Without it, components render but won't pick up the liquid-glass styling.
+
+`react` and `react-dom` are peer dependencies. Most React apps already have them installed, but if you're wiring this into a fresh project, install them explicitly.
 
 The package no longer auto-loads Google Fonts. If you want the original look, load `Nunito` yourself in your app shell, or override `--rmui-font-family` after importing `react-magic-ui/style.css`.
 
