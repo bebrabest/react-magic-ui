@@ -234,6 +234,7 @@ const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const {
       value: selectedValue,
       setValue,
+      deactivate,
       orientation,
       isControlled,
       registerTrigger,
@@ -256,19 +257,18 @@ const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
     }, [disabled, onClick, setValue, value]);
 
     const handleFocus = useCallback((event: React.FocusEvent<HTMLButtonElement>) => {
-      // Focus the trigger when tabbing in from outside the tab list
-      if (event.target === event.currentTarget) {
+      if (!disabled && selectedValue !== value) {
         const enabledValues = getEnabledTriggerValues();
-        const currentIndex = enabledValues.indexOf(value);
-        if (currentIndex === -1) return;
-        
-        const triggerElement = document.getElementById(triggerId);
-        if (triggerElement) {
-          triggerElement.focus();
+
+        if (enabledValues.includes(value)) {
+          if (event.target === event.currentTarget) {
+            deactivate(value);
+          }
         }
       }
+
       onFocus?.(event);
-    }, [getEnabledTriggerValues, onFocus, triggerId, value]);
+    }, [deactivate, disabled, getEnabledTriggerValues, onFocus, selectedValue, value]);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
       onKeyDown?.(event);
