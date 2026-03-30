@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import styles from "./style/Checkbox.module.scss";
 import clsx from "clsx";
 import Glass, { GlassProps } from "../glass/Glass";
@@ -21,6 +21,8 @@ const Checkbox: React.FC<CheckboxProps> = ({
     enableClickAnimation = true,
     ...props
 }) => {
+    const labelId = useId();
+
     const toggle = () => {
         if (!disabled && onChange) {
             onChange(!checked);
@@ -38,6 +40,10 @@ const Checkbox: React.FC<CheckboxProps> = ({
                 enableLiquidAnimation={enableClickAnimation}
                 as="button"
                 type="button"
+                role="checkbox"
+                aria-checked={checked}
+                aria-disabled={disabled}
+                aria-labelledby={label ? labelId : undefined}
                 onClick={toggle}
                 className={clsx(
                     styles.checkbox,
@@ -70,7 +76,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
                 )}
             </Glass>
             {label && (
-                <span className={styles.label} onClick={toggle}>
+                <span id={labelId} className={styles.label} onClick={toggle}>
                     {label}
                 </span>
             )}
