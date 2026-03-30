@@ -135,7 +135,7 @@ const ToastCard: React.FC<{
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      setPhase("enter");
+      setPhase((currentPhase) => (currentPhase === "initial" ? "enter" : currentPhase));
     });
 
     return () => cancelAnimationFrame(frame);
