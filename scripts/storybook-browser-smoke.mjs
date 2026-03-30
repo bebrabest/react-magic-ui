@@ -137,6 +137,27 @@ async function runSmoke(browser) {
     await page.getByText(/interactive charts/i).waitFor({ state: 'visible' });
   });
 
+  await step('sidebar supports keyboard navigation and collapse toggle', async () => {
+    await gotoStory(page, 'sidebar--default');
+    const dashboard = page.getByRole('button', { name: /^dashboard$/i });
+    await dashboard.focus();
+    await page.keyboard.press('ArrowDown');
+    const analytics = page.getByRole('button', { name: /^analytics$/i });
+    await analytics.waitFor({ state: 'visible' });
+    await analytics.focus();
+    await page.keyboard.press('Enter');
+    if ((await analytics.getAttribute('aria-current')) !== 'page') {
+      throw new Error('sidebar did not mark Analytics as active after keyboard activation');
+    }
+
+    const toggle = page.getByRole('button', { name: /collapse sidebar|expand sidebar/i });
+    await toggle.click();
+    const title = page.getByText('Magic UI');
+    await title.waitFor({ state: 'hidden' });
+    await toggle.click();
+    await title.waitFor({ state: 'visible' });
+  });
+
   await step('modal opens and closes with Escape', async () => {
     await gotoStory(page, 'modal--default');
     await page.getByRole('button', { name: /open modal/i }).click();
@@ -151,6 +172,15 @@ async function runSmoke(browser) {
     await page.getByRole('status').waitFor({ state: 'visible' });
     await page.getByRole('button', { name: /clear all/i }).click();
     await page.getByRole('status').waitFor({ state: 'hidden' });
+  });
+
+  await step('topbar renders composed brand, search, and actions', async () => {
+    await gotoStory(page, 'topbar--default');
+    await page.getByText('Magic UI').waitFor({ state: 'visible' });
+    await page.getByText('Command Center').waitFor({ state: 'visible' });
+    await page.getByPlaceholder('Search anything...').waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: 'Invite' }).waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: 'Share' }).waitFor({ state: 'visible' });
   });
 
   return { page, results, pwLogs };
