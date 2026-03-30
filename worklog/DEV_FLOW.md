@@ -30,7 +30,7 @@ Primary commands from the root:
 5. `npm run build` before release-sensitive changes
 6. `npm run build-storybook` when docs/story rendering changes need a full static verification
 7. `npm run test:demo-consumer` when package exports / CSS contract / consumer-facing integration changes need build-level validation against the real demo app; it also writes source-audit warnings for obvious contract mismatches in the sibling demo app
-8. `npm run test:demo-browser-smoke` when you want a higher-confidence rendered consumer check against the real demo app after installing the packed tarball
+8. `npm run test:demo-browser-smoke` when you want a higher-confidence rendered consumer check against the real demo app after installing the packed tarball; it now also carries demo-consumer source-audit warnings into the browser-smoke summary/output so sibling-demo contract mismatches are visible in the higher-level flow
 
 ## Notes
 

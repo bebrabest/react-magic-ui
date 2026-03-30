@@ -20,6 +20,9 @@ const executablePath = process.env.PLAYWRIGHT_CHROME_PATH ?? '/root/.cache/ms-pl
 const packTempRoot = process.env.RMUI_PACK_TEMP_DIR
   ? path.resolve(process.env.RMUI_PACK_TEMP_DIR)
   : path.join(repoRoot, 'worklog', 'pack-temp');
+const demoContractOutRoot = process.env.RMUI_DEMO_CONTRACT_OUTDIR
+  ? path.resolve(process.env.RMUI_DEMO_CONTRACT_OUTDIR)
+  : path.join(repoRoot, 'worklog', 'demo-consumer');
 
 async function sleep(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -338,6 +341,30 @@ async function runSmoke(browser) {
   return { page, results, pwLogs };
 }
 
+async function readLatestDemoConsumerSummary() {
+  try {
+    const entries = await fs.readdir(demoContractOutRoot, { withFileTypes: true });
+    const latestDir = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+      .at(-1);
+
+    if (!latestDir) {
+      return null;
+    }
+
+    const summaryPath = path.join(demoContractOutRoot, latestDir, 'summary.json');
+    const raw = await fs.readFile(summaryPath, 'utf8');
+    return {
+      path: summaryPath,
+      data: JSON.parse(raw),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   await fs.mkdir(outDir, { recursive: true });
 
@@ -371,6 +398,14 @@ async function main() {
     throw new Error(`npm run test:demo-consumer failed with exit code ${validationCode}`);
   }
 
+  const demoConsumerSummary = await readLatestDemoConsumerSummary();
+  if (demoConsumerSummary) {
+    await fs.writeFile(
+      path.join(outDir, 'demo-consumer-summary.json'),
+      JSON.stringify(demoConsumerSummary.data, null, 2)
+    );
+  }
+
   const { child, logs: previewLogs } = startPreview();
 
   try {
@@ -389,6 +424,15 @@ async function main() {
     await fs.writeFile(path.join(outDir, 'playwright-log.txt'), pwLogs.join('\n') + '\n');
     await fs.writeFile(path.join(outDir, 'preview-log.txt'), previewLogs.join(''));
 
+    const browserSummary = {
+      outDir,
+      previewUrl,
+      demoConsumerSummaryPath: demoConsumerSummary?.path ?? null,
+      demoConsumerWarnings: demoConsumerSummary?.data?.warnings ?? [],
+      results,
+    };
+    await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(browserSummary, null, 2));
+
     await browser.close();
 
     const failed = results.find((result) => result.status === 'failed');
@@ -396,7 +440,16 @@ async function main() {
       throw new Error(`demo browser smoke failed at: ${failed.name}${failed.error ? ` - ${failed.error}` : ''}`);
     }
 
-    console.log(JSON.stringify({ outDir, previewUrl, results }, null, 2));
+    console.log(JSON.stringify(browserSummary, null, 2));
+
+    if (browserSummary.demoConsumerWarnings.length > 0) {
+      console.warn(
+        `demo browser smoke inherited ${browserSummary.demoConsumerWarnings.length} demo-consumer warning(s)`
+      );
+      for (const warning of browserSummary.demoConsumerWarnings) {
+        console.warn(`- [${warning.type}] ${warning.message}`);
+      }
+    }
   } finally {
     const waitExit = new Promise((resolve) => child.once('exit', resolve));
     try { child.kill('SIGTERM'); } catch {}
