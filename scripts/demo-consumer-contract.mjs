@@ -491,6 +491,82 @@ function auditSidebarNavigation(source, filePath) {
   };
 }
 
+function auditModalAccessibility(source, filePath) {
+  const modalTags = findComponentTags(source, 'Modal');
+  const modalRootPresent = modalTags.length > 0;
+
+  if (!modalRootPresent) {
+    return {
+      checklist: {
+        modalRootPresent: false,
+        modalAccessibleNameProvided: false,
+        modalAccessibleDescriptionProvided: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unnamedModalTags = modalTags.filter(
+    (tag) => !hasProp(tag, 'title') && !hasProp(tag, 'aria-label') && !hasProp(tag, 'aria-labelledby')
+  );
+  const undescribedModalTags = modalTags.filter(
+    (tag) => !hasProp(tag, 'description') && !hasProp(tag, 'aria-describedby')
+  );
+
+  return {
+    checklist: {
+      modalRootPresent: true,
+      modalAccessibleNameProvided: unnamedModalTags.length === 0,
+      modalAccessibleDescriptionProvided: undescribedModalTags.length === 0,
+    },
+    warnings: [
+      ...(unnamedModalTags.length === 0
+        ? []
+        : [
+            {
+              type: 'modal-missing-accessible-name',
+              severity: 'warning',
+              message:
+                'Demo source renders `<Modal>` without a usable accessible name (`title`, `aria-label`, or `aria-labelledby`), so the dialog can open correctly while still being anonymous to assistive tech by contract.',
+              remediation:
+                'Give each demo `<Modal>` a `title` (preferred) or an explicit `aria-label`/`aria-labelledby` so the dialog exposes a real accessible name.',
+              filesChecked: [filePath],
+              hits: {
+                modals: collectLineHits(source, /<Modal\b/),
+                titles: collectLineHits(source, /\btitle\s*=/),
+                ariaLabels: collectLineHits(source, /\baria-label\s*=/),
+                ariaLabelledBy: collectLineHits(source, /\baria-labelledby\s*=/),
+              },
+              context: {
+                offendingTags: unnamedModalTags,
+              },
+            },
+          ]),
+      ...(undescribedModalTags.length === 0
+        ? []
+        : [
+            {
+              type: 'modal-missing-accessible-description',
+              severity: 'warning',
+              message:
+                'Demo source renders `<Modal>` without a usable accessible description (`description` or `aria-describedby`), so the dialog can still render while shipping a weaker context/announcement contract for screen readers.',
+              remediation:
+                'Give each demo `<Modal>` a `description` (preferred) or an explicit `aria-describedby` so the dialog exposes meaningful descriptive context.',
+              filesChecked: [filePath],
+              hits: {
+                modals: collectLineHits(source, /<Modal\b/),
+                descriptions: collectLineHits(source, /\bdescription\s*=/),
+                ariaDescribedBy: collectLineHits(source, /\baria-describedby\s*=/),
+              },
+              context: {
+                offendingTags: undescribedModalTags,
+              },
+            },
+          ]),
+    ],
+  };
+}
+
 function auditControlledComponentUsage({
   source,
   componentName,
@@ -641,6 +717,9 @@ async function auditDemoSource() {
     });
   }
 
+  const modalAccessibilityAudit = auditModalAccessibility(appSource, appPath);
+  warnings.push(...modalAccessibilityAudit.warnings);
+
   const tabsCompositionAudit = auditTabsComposition(appSource, appPath);
   warnings.push(...tabsCompositionAudit.warnings);
 
@@ -781,6 +860,9 @@ async function auditDemoSource() {
       toastProviderRendered,
       controlledModalUsage,
       modalDismissHandlerProvided,
+      modalRootPresent: modalAccessibilityAudit.checklist.modalRootPresent,
+      modalAccessibleNameProvided: modalAccessibilityAudit.checklist.modalAccessibleNameProvided,
+      modalAccessibleDescriptionProvided: modalAccessibilityAudit.checklist.modalAccessibleDescriptionProvided,
       inputControlledUsage: /<Input\b[^>]*\bvalue\s*=/.test(appSource),
       inputHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-input-without-onchange'),
       selectControlledUsage: /<Select\b[^>]*\bvalue\s*=/.test(appSource),
@@ -832,6 +914,9 @@ async function main() {
       toastProviderRendered: false,
       controlledModalUsage: false,
       modalDismissHandlerProvided: false,
+      modalRootPresent: false,
+      modalAccessibleNameProvided: false,
+      modalAccessibleDescriptionProvided: false,
       inputControlledUsage: false,
       inputHandlerProvided: false,
       selectControlledUsage: false,
