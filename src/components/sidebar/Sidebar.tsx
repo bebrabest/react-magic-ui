@@ -331,7 +331,6 @@ const SidebarItem = forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     if (process.env.NODE_ENV !== "production" && collapsed && !ariaLabel) {
       // when collapsed, the visible label may be icon-only. ensure screen readers still have a name.
-      // eslint-disable-next-line no-console
       console.warn(
         "[react-magic-ui] Sidebar.Item is collapsed but has no accessible name. Provide aria-label or string children.",
         { itemId },

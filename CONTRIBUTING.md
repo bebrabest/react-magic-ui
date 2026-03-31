@@ -60,8 +60,11 @@ npm test
 # Run tests in watch mode
 npm run test-watch
 
-# Lint files (currently auto-fixes)
+# Lint files without rewriting them
 npm run lint
+
+# Apply ESLint auto-fixes explicitly when desired
+npm run lint:fix
 
 # Build the library
 npm run build

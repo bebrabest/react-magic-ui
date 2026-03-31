@@ -107,8 +107,11 @@ npm test
 # Watch tests locally
 npm run test-watch
 
-# Lint source files (currently runs with --fix)
+# Lint source files without rewriting them
 npm run lint
+
+# Apply ESLint auto-fixes explicitly when you want mutations
+npm run lint:fix
 
 # Build the library package
 npm run build
