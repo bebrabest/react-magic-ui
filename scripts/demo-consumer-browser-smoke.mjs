@@ -358,6 +358,25 @@ async function runSmoke(browser, demoConsumerSummary) {
     });
   });
 
+  await step('modal close button dismisses the dialog and restores trigger focus', async () => {
+    const openModalButton = page.getByRole('button', { name: /open modal/i });
+    await openModalButton.focus();
+    await page.keyboard.press('Enter');
+
+    const dialog = page.getByRole('dialog', { name: /glass modal/i });
+    await dialog.waitFor({ state: 'visible' });
+
+    const closeButton = page.getByRole('button', { name: /close modal/i });
+    await closeButton.waitFor({ state: 'visible' });
+    await closeButton.click();
+
+    await dialog.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLButtonElement && /open modal/i.test(active.textContent ?? '');
+    });
+  });
+
   await step('tabs switch visible content', async () => {
     await page.getByRole('tab', { name: /^pricing$/i }).click();
     await page.getByText(/free & open source/i).waitFor({ state: 'visible' });
