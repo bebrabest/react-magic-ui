@@ -120,6 +120,61 @@ function detectSidebarWidthOverrideRisk(sidebarRootTag) {
   };
 }
 
+function findComponentTags(source, componentName) {
+  return [...source.matchAll(new RegExp(`<${componentName}(?!\\.)\\b[^>]*>`, 'g'))].map((match) => match[0]);
+}
+
+function hasProp(tag, propName) {
+  return new RegExp(`\\b${propName}\\s*=`).test(tag);
+}
+
+function auditControlledComponentUsage({
+  source,
+  componentName,
+  valueProp,
+  handlerProps,
+  warningType,
+  message,
+  remediation,
+  filePath,
+}) {
+  const componentTags = findComponentTags(source, componentName);
+  const offendingTags = componentTags.filter(
+    (tag) => hasProp(tag, valueProp) && !handlerProps.some((handlerProp) => hasProp(tag, handlerProp))
+  );
+
+  if (offendingTags.length === 0) {
+    return null;
+  }
+
+  return {
+    warning: {
+      type: warningType,
+      severity: 'warning',
+      message,
+      remediation,
+      filesChecked: [filePath],
+      hits: {
+        component: collectLineHits(source, new RegExp(`<${componentName}(?!\\.)\\b`)),
+        valueProp: collectLineHits(source, new RegExp(`\\b${valueProp}\\s*=`)),
+        handlerProps: handlerProps.flatMap((handlerProp) =>
+          collectLineHits(source, new RegExp(`\\b${handlerProp}\\s*=`))
+        ),
+      },
+      context: {
+        componentName,
+        valueProp,
+        handlerProps,
+        offendingTags,
+      },
+    },
+    checklist: {
+      [`${componentName.charAt(0).toLowerCase()}${componentName.slice(1)}ControlledUsage`]: true,
+      [`${componentName.charAt(0).toLowerCase()}${componentName.slice(1)}HandlerProvided`]: false,
+    },
+  };
+}
+
 async function auditDemoSource() {
   const appPath = path.join(demoDir, 'src', 'App.tsx');
   const mainPath = path.join(demoDir, 'src', 'main.tsx');
@@ -223,6 +278,73 @@ async function auditDemoSource() {
     });
   }
 
+  const controlledComponentAudits = [
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Input',
+      valueProp: 'value',
+      handlerProps: ['onChange'],
+      warningType: 'controlled-input-without-onchange',
+      message: 'Demo source renders a controlled `<Input value={...}>` without `onChange`, so the field becomes read-only by accident and stops behaving like a real consumer input.',
+      remediation: 'When the sibling demo passes `value` to `<Input>`, also pass `onChange` (or remove `value` to keep it uncontrolled).',
+      filePath: appPath,
+    }),
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Select',
+      valueProp: 'value',
+      handlerProps: ['onChange'],
+      warningType: 'controlled-select-without-onchange',
+      message: 'Demo source renders a controlled `<Select value={...}>` without `onChange`, so the selected option cannot actually update through the component contract.',
+      remediation: 'When the sibling demo passes `value` to `<Select>`, also pass `onChange` (or remove `value` to keep it uncontrolled).',
+      filePath: appPath,
+    }),
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Slider',
+      valueProp: 'value',
+      handlerProps: ['onChange'],
+      warningType: 'controlled-slider-without-onchange',
+      message: 'Demo source renders a controlled `<Slider value={...}>` without `onChange`, so keyboard/drag interactions cannot persist the next value through the component contract.',
+      remediation: 'When the sibling demo passes `value` to `<Slider>`, also pass `onChange` (or remove `value` to keep it uncontrolled).',
+      filePath: appPath,
+    }),
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Checkbox',
+      valueProp: 'checked',
+      handlerProps: ['onChange'],
+      warningType: 'controlled-checkbox-without-onchange',
+      message: 'Demo source renders a controlled `<Checkbox checked={...}>` without `onChange`, so user toggles cannot update the checked state through the component contract.',
+      remediation: 'When the sibling demo passes `checked` to `<Checkbox>`, also pass `onChange` (or remove `checked` to keep it uncontrolled).',
+      filePath: appPath,
+    }),
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Switch',
+      valueProp: 'isActive',
+      handlerProps: ['setIsActive'],
+      warningType: 'controlled-switch-without-setisactive',
+      message: 'Demo source renders a controlled `<Switch isActive={...}>` without `setIsActive`, so user toggles cannot update the switch state through the component contract.',
+      remediation: 'When the sibling demo passes `isActive` to `<Switch>`, also pass `setIsActive` (or remove `isActive` to keep it uncontrolled).',
+      filePath: appPath,
+    }),
+    auditControlledComponentUsage({
+      source: appSource,
+      componentName: 'Tabs',
+      valueProp: 'value',
+      handlerProps: ['onValueChange'],
+      warningType: 'controlled-tabs-without-onvaluechange',
+      message: 'Demo source renders controlled `<Tabs value={...}>` without `onValueChange`, so tab selection cannot flow back up through the component contract.',
+      remediation: 'When the sibling demo passes `value` to `<Tabs>`, also pass `onValueChange` (or use `defaultValue` for uncontrolled tabs).',
+      filePath: appPath,
+    }),
+  ].filter(Boolean);
+
+  for (const controlledAudit of controlledComponentAudits) {
+    warnings.push(controlledAudit.warning);
+  }
+
   const sidebarToggleUsed = /<Sidebar\.Toggle\b/.test(appSource);
   const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(appSource);
   const sidebarToggleRequiresCollapsibleFix = sidebarToggleUsed && !sidebarMarkedCollapsible;
@@ -287,6 +409,18 @@ async function auditDemoSource() {
       toastProviderRendered,
       controlledModalUsage,
       modalDismissHandlerProvided,
+      inputControlledUsage: /<Input\b[^>]*\bvalue\s*=/.test(appSource),
+      inputHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-input-without-onchange'),
+      selectControlledUsage: /<Select\b[^>]*\bvalue\s*=/.test(appSource),
+      selectHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-select-without-onchange'),
+      sliderControlledUsage: /<Slider\b[^>]*\bvalue\s*=/.test(appSource),
+      sliderHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-slider-without-onchange'),
+      checkboxControlledUsage: /<Checkbox\b[^>]*\bchecked\s*=/.test(appSource),
+      checkboxHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-checkbox-without-onchange'),
+      switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
+      switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
+      tabsControlledUsage: /<Tabs\b[^>]*\bvalue\s*=/.test(appSource),
+      tabsHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-tabs-without-onvaluechange'),
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -313,6 +447,18 @@ async function main() {
       toastProviderRendered: false,
       controlledModalUsage: false,
       modalDismissHandlerProvided: false,
+      inputControlledUsage: false,
+      inputHandlerProvided: false,
+      selectControlledUsage: false,
+      selectHandlerProvided: false,
+      sliderControlledUsage: false,
+      sliderHandlerProvided: false,
+      checkboxControlledUsage: false,
+      checkboxHandlerProvided: false,
+      switchControlledUsage: false,
+      switchHandlerProvided: false,
+      tabsControlledUsage: false,
+      tabsHandlerProvided: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
