@@ -284,15 +284,41 @@ async function runSmoke(browser, demoConsumerSummary) {
   await step('slider responds to keyboard changes', async () => {
     const slider = page.getByRole('slider').first();
     await slider.focus();
+
     const before = Number(await slider.getAttribute('aria-valuenow'));
     await page.keyboard.press('ArrowRight');
     await page.waitForFunction(() => {
       const active = document.activeElement;
       return active?.getAttribute('role') === 'slider' && Number(active.getAttribute('aria-valuenow')) > 50;
     });
-    const after = Number(await slider.getAttribute('aria-valuenow'));
-    if (!(after > before)) {
-      throw new Error(`slider value did not increase (before=${before}, after=${after})`);
+
+    const afterArrowRight = Number(await slider.getAttribute('aria-valuenow'));
+    if (!(afterArrowRight > before)) {
+      throw new Error(`slider value did not increase after ArrowRight (before=${before}, after=${afterArrowRight})`);
+    }
+
+    await page.keyboard.press('Home');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'slider' && Number(active.getAttribute('aria-valuenow')) === Number(active.getAttribute('aria-valuemin'));
+    });
+
+    const afterHome = Number(await slider.getAttribute('aria-valuenow'));
+    const min = Number(await slider.getAttribute('aria-valuemin'));
+    if (afterHome !== min) {
+      throw new Error(`slider did not jump to min after Home (min=${min}, actual=${afterHome})`);
+    }
+
+    await page.keyboard.press('End');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'slider' && Number(active.getAttribute('aria-valuenow')) === Number(active.getAttribute('aria-valuemax'));
+    });
+
+    const afterEnd = Number(await slider.getAttribute('aria-valuenow'));
+    const max = Number(await slider.getAttribute('aria-valuemax'));
+    if (afterEnd !== max) {
+      throw new Error(`slider did not jump to max after End (max=${max}, actual=${afterEnd})`);
     }
   });
 
