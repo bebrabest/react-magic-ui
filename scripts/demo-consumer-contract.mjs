@@ -227,6 +227,75 @@ function auditTabsComposition(source, filePath) {
   };
 }
 
+function extractInlineSelectOptions(selectTag) {
+  const optionsMatch = selectTag.match(/\boptions\s*=\s*\{\s*\[([\s\S]*?)\]\s*\}/);
+  if (!optionsMatch) {
+    return [];
+  }
+
+  return [...optionsMatch[1].matchAll(/\bvalue\s*:\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);
+}
+
+function auditSelectOptionValues(source, filePath) {
+  const selectTags = findComponentTags(source, 'Select');
+  if (selectTags.length === 0) {
+    return {
+      checklist: {
+        selectRootPresent: false,
+        selectOptionValuesUnique: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const duplicateContexts = selectTags
+    .map((tag, index) => {
+      const optionValues = extractInlineSelectOptions(tag);
+      const duplicateValues = optionValues.filter((value, valueIndex) => optionValues.indexOf(value) !== valueIndex);
+
+      return {
+        index,
+        tag,
+        optionValues,
+        duplicateValues: unique(duplicateValues),
+      };
+    })
+    .filter((entry) => entry.duplicateValues.length > 0);
+
+  return {
+    checklist: {
+      selectRootPresent: true,
+      selectOptionValuesUnique: duplicateContexts.length === 0,
+    },
+    warnings:
+      duplicateContexts.length === 0
+        ? []
+        : [
+            {
+              type: 'select-duplicate-option-values',
+              severity: 'warning',
+              message:
+                'Demo source renders a `<Select>` with duplicate option `value` entries, which makes controlled selection and label lookup ambiguous by contract.',
+              remediation:
+                'Keep each demo `<Select options={[...]}>` value unique so the selected value always maps to one clear option.',
+              filesChecked: [filePath],
+              hits: {
+                selects: collectLineHits(source, /<Select\b/),
+                optionValues: collectLineHits(source, /\bvalue\s*:\s*["'][^"']+["']/),
+              },
+              context: {
+                duplicateSelects: duplicateContexts.map(({ index, duplicateValues, optionValues, tag }) => ({
+                  selectIndex: index,
+                  duplicateValues,
+                  optionValues,
+                  tag,
+                })),
+              },
+            },
+          ],
+  };
+}
+
 function auditControlledComponentUsage({
   source,
   componentName,
@@ -380,6 +449,9 @@ async function auditDemoSource() {
   const tabsCompositionAudit = auditTabsComposition(appSource, appPath);
   warnings.push(...tabsCompositionAudit.warnings);
 
+  const selectOptionAudit = auditSelectOptionValues(appSource, appPath);
+  warnings.push(...selectOptionAudit.warnings);
+
   const controlledComponentAudits = [
     auditControlledComponentUsage({
       source: appSource,
@@ -527,6 +599,8 @@ async function auditDemoSource() {
       tabsListRendered: tabsCompositionAudit.checklist.tabsListRendered,
       tabsTriggerValuesUnique: tabsCompositionAudit.checklist.tabsTriggerValuesUnique,
       tabsTriggerContentPairsAligned: tabsCompositionAudit.checklist.tabsTriggerContentPairsAligned,
+      selectRootPresent: selectOptionAudit.checklist.selectRootPresent,
+      selectOptionValuesUnique: selectOptionAudit.checklist.selectOptionValuesUnique,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -569,6 +643,8 @@ async function main() {
       tabsListRendered: false,
       tabsTriggerValuesUnique: false,
       tabsTriggerContentPairsAligned: false,
+      selectRootPresent: false,
+      selectOptionValuesUnique: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,

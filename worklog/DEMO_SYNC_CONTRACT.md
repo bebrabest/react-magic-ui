@@ -32,6 +32,7 @@ The demo source audit is intentionally opinionated about a few high-signal consu
 - `controlled-modal-without-dismiss-handler` - if the demo controls `<Modal open={...}>`, it must also pass `onOpenChange` or `onClose` so built-in dismiss interactions can actually close the dialog
 - `controlled-input-without-onchange` / `controlled-select-without-onchange` / `controlled-slider-without-onchange` / `controlled-checkbox-without-onchange` / `controlled-switch-without-setisactive` / `controlled-tabs-without-onvaluechange` - if the demo passes the controlled value prop for these library components, it must also pass the matching change handler so the example does not silently become read-only or state-stuck
 - `tabs-without-list` / `tabs-duplicate-trigger-values` / `tabs-trigger-content-value-mismatch` - if the demo uses composed `Tabs`, it should render a real `<Tabs.List>`, keep trigger values unique, and keep `<Tabs.Trigger value>` / `<Tabs.Content value>` pairs aligned so navigation and panel selection stay honest
+- `select-duplicate-option-values` - if the demo defines inline `Select` options, each option `value` should stay unique so controlled selection and option lookup do not become ambiguous
 - `sidebar-toggle-without-collapsible` - if the demo renders `<Sidebar.Toggle />`, the surrounding `<Sidebar>` must actually be `collapsible`
 - `sidebar-root-width-override` - a collapsible sidebar should not also force width via `rootClassName`, because width utilities can silently override the component's own expanded/collapsed contract
 
