@@ -427,18 +427,18 @@ function auditSidebarNavigation(source, filePath) {
     attrs: match[1] ?? '',
     children: match[2] ?? '',
   }));
-  const missingCollapsedAccessibleNames = sidebarMarkedCollapsible
-    ? sidebarItemTags.filter(({ attrs, children }) => {
-        const hasAriaLabel = /\baria-label\s*=/.test(attrs);
-        const childText = children
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\{[^}]+\}/g, ' ')
-          .replace(/&nbsp;/g, ' ')
-          .trim();
+  const sidebarItemsMissingAccessibleNames = sidebarItemTags.filter(({ attrs, children }) => {
+    const hasAriaLabel = /\baria-label\s*=/.test(attrs);
+    const childText = children
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\{[^}]+\}/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
 
-        return !hasAriaLabel && childText.length === 0;
-      })
-    : [];
+    return !hasAriaLabel && childText.length === 0;
+  });
+  const missingCollapsedAccessibleNames = sidebarMarkedCollapsible ? sidebarItemsMissingAccessibleNames : [];
+  const sidebarItemAccessibleNamesPresent = sidebarItemsMissingAccessibleNames.length === 0;
   const sidebarCollapsedItemAccessibleNamesPresent = missingCollapsedAccessibleNames.length === 0;
 
   return {
@@ -447,6 +447,7 @@ function auditSidebarNavigation(source, filePath) {
       sidebarItemIdsUnique,
       sidebarItemTargetsExist,
       sidebarActiveItemIdsMatchItems,
+      sidebarItemAccessibleNamesPresent,
       sidebarCollapsedItemAccessibleNamesPresent,
     },
     warnings: [
@@ -488,6 +489,29 @@ function auditSidebarNavigation(source, filePath) {
                 missingSectionTargets,
                 sidebarItemIds,
                 sectionIds,
+              },
+            },
+          ]
+        : []),
+      ...(!sidebarItemAccessibleNamesPresent
+        ? [
+            {
+              type: 'sidebar-item-missing-accessible-name',
+              severity: 'warning',
+              message:
+                'Demo source renders one or more `<Sidebar.Item>` entries without a usable accessible name, so the navigation contract can degrade into unnamed items for assistive tech even if the sidebar still looks fine visually.',
+              remediation:
+                'Give each sibling demo `<Sidebar.Item>` a usable accessible name via plain text children or `aria-label`, especially before relying on icon-only or collapsed navigation patterns.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+                ariaLabels: collectLineHits(source, /\baria-label\s*=/),
+              },
+              context: {
+                missingAccessibleNameItems: sidebarItemsMissingAccessibleNames.map(({ tag }, index) => ({
+                  sidebarItemIndex: index,
+                  tag,
+                })),
               },
             },
           ]
@@ -939,6 +963,7 @@ async function auditDemoSource() {
       sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
       sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
       sidebarActiveItemIdsMatchItems: sidebarNavigationAudit.checklist.sidebarActiveItemIdsMatchItems,
+      sidebarItemAccessibleNamesPresent: sidebarNavigationAudit.checklist.sidebarItemAccessibleNamesPresent,
       sidebarCollapsedItemAccessibleNamesPresent:
         sidebarNavigationAudit.checklist.sidebarCollapsedItemAccessibleNamesPresent,
       sidebarTogglePresent: sidebarToggleUsed,
@@ -994,6 +1019,7 @@ async function main() {
       sidebarItemIdsUnique: false,
       sidebarItemTargetsExist: false,
       sidebarActiveItemIdsMatchItems: false,
+      sidebarItemAccessibleNamesPresent: false,
       sidebarCollapsedItemAccessibleNamesPresent: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
