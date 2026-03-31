@@ -377,6 +377,25 @@ async function runSmoke(browser, demoConsumerSummary) {
     });
   });
 
+  await step('modal overlay click dismisses the dialog and restores trigger focus', async () => {
+    const openModalButton = page.getByRole('button', { name: /open modal/i });
+    await openModalButton.focus();
+    await page.keyboard.press('Enter');
+
+    const dialog = page.getByRole('dialog', { name: /glass modal/i });
+    await dialog.waitFor({ state: 'visible' });
+
+    const overlay = page.getByTestId('modal-overlay');
+    await overlay.waitFor({ state: 'visible' });
+    await overlay.click({ position: { x: 12, y: 12 } });
+
+    await dialog.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active instanceof HTMLButtonElement && /open modal/i.test(active.textContent ?? '');
+    });
+  });
+
   await step('tabs switch visible content', async () => {
     await page.getByRole('tab', { name: /^pricing$/i }).click();
     await page.getByText(/free & open source/i).waitFor({ state: 'visible' });
