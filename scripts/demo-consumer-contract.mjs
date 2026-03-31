@@ -529,6 +529,67 @@ function auditBadgeContent(source, filePath) {
   };
 }
 
+function auditTopbarContent(source, filePath) {
+  const topbarTags = findComponentTags(source, 'Topbar');
+  if (topbarTags.length === 0) {
+    return {
+      checklist: {
+        topbarRootPresent: false,
+        topbarContentPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const topbarBrandTags = [...source.matchAll(/<Topbar\.Brand\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Topbar\.Brand>)/g)];
+  const topbarHasHeading = /<h[1-6]\b/.test(source);
+  const topbarHasBrandTitleProp = /<Topbar\.Brand\b[^>]*\btitle\s*=/.test(source);
+  const topbarHasAccessibleName = topbarTags.some((tag) => /\b(?:aria-label|aria-labelledby)\s*=/.test(tag));
+  const topbarBrandHasContent = topbarBrandTags.some((match) => {
+    const attrs = match[1] ?? '';
+    const children = (match[2] ?? '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\{[^}]+\}/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return /\b(?:title|aria-label|aria-labelledby)\s*=/.test(attrs) || children.length > 0;
+  });
+
+  const topbarContentPresent = topbarHasHeading || topbarHasBrandTitleProp || topbarBrandHasContent || topbarHasAccessibleName;
+
+  return {
+    checklist: {
+      topbarRootPresent: true,
+      topbarContentPresent,
+    },
+    warnings: topbarContentPresent
+      ? []
+      : [{
+          type: 'topbar-missing-content',
+          severity: 'warning',
+          message:
+            'Demo source renders `<Topbar>` without a usable brand/title signal or accessible name, so the header shell can look structurally present while communicating no clear identity or landmark name to users.',
+          remediation:
+            'Give the sibling demo topbar visible brand/title content (for example an `h1` or `Topbar.Brand title`) or an explicit accessible name via `aria-label` / `aria-labelledby` when the header is intentionally minimal.',
+          filesChecked: [filePath],
+          hits: {
+            topbars: collectLineHits(source, /<Topbar(?!\.)\b/),
+            topbarBrands: collectLineHits(source, /<Topbar\.Brand\b/),
+            headings: collectLineHits(source, /<h[1-6]\b/),
+            accessibleNames: collectLineHits(source, /\b(?:aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            topbarHasHeading,
+            topbarHasBrandTitleProp,
+            topbarHasBrandContent: topbarBrandHasContent,
+            topbarHasAccessibleName,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -1255,6 +1316,9 @@ async function auditDemoSource() {
   const badgeContentAudit = auditBadgeContent(appSource, appPath);
   warnings.push(...badgeContentAudit.warnings);
 
+  const topbarContentAudit = auditTopbarContent(appSource, appPath);
+  warnings.push(...topbarContentAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -1412,6 +1476,8 @@ async function auditDemoSource() {
       buttonAccessibleNamesPresent: buttonAccessibleNameAudit.checklist.buttonAccessibleNamesPresent,
       badgeRootPresent: badgeContentAudit.checklist.badgeRootPresent,
       badgeContentPresent: badgeContentAudit.checklist.badgeContentPresent,
+      topbarRootPresent: topbarContentAudit.checklist.topbarRootPresent,
+      topbarContentPresent: topbarContentAudit.checklist.topbarContentPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
@@ -1482,6 +1548,8 @@ async function main() {
       buttonAccessibleNamesPresent: false,
       badgeRootPresent: false,
       badgeContentPresent: false,
+      topbarRootPresent: false,
+      topbarContentPresent: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
       switchRootPresent: false,
