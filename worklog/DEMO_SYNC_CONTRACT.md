@@ -29,6 +29,7 @@ The demo source audit is intentionally opinionated about a few high-signal consu
 - `missing-style-import` - the demo must import `react-magic-ui/style.css`
 - `internal-package-path-import` - the demo must not depend on `react-magic-ui/dist/*` internals
 - `toast-hook-without-provider` - if the demo uses `useToast`, it must actually render a surrounding `<ToastProvider>`
+- `toast-missing-content` - if the demo calls `showToast({...})`, each toast should include meaningful `title` or `description` content so the feedback surface does not quietly degrade into an empty shell
 - `controlled-modal-without-dismiss-handler` - if the demo controls `<Modal open={...}>`, it must also pass `onOpenChange` or `onClose` so built-in dismiss interactions can actually close the dialog
 - `modal-missing-accessible-name` / `modal-missing-accessible-description` - if the demo renders `<Modal>`, it should give it a real accessible name (`title`, `aria-label`, or `aria-labelledby`) and meaningful descriptive context (`description` or `aria-describedby`) so the dialog contract is not visually correct but semantically thin
 - `controlled-input-without-onchange` / `controlled-select-without-onchange` / `controlled-slider-without-onchange` / `controlled-checkbox-without-onchange` / `controlled-switch-without-setisactive` / `controlled-tabs-without-onvaluechange` - if the demo passes the controlled value prop for these library components, it must also pass the matching change handler so the example does not silently become read-only or state-stuck

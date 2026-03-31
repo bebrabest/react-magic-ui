@@ -712,6 +712,83 @@ function auditTopbarContent(source, filePath) {
   };
 }
 
+function auditToastContent(source, filePath) {
+  const toastCalls = [...source.matchAll(/showToast\s*\(\s*\{([\s\S]*?)\}\s*\)/g)].map((match) => {
+    const body = match[1] ?? '';
+
+    const titleMatch = body.match(/\btitle\s*:\s*([\s\S]*?)(?:,\s*\n|,\s*[A-Za-z_$][\w$]*\s*:|$)/);
+    const descriptionMatch = body.match(/\bdescription\s*:\s*([\s\S]*?)(?:,\s*\n|,\s*[A-Za-z_$][\w$]*\s*:|$)/);
+    const variantMatch = body.match(/\bvariant\s*:\s*["']([^"']+)["']/);
+
+    const normalizeValue = (value) =>
+      (value ?? '')
+        .replace(/[{}]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return {
+      raw: match[0],
+      body,
+      title: normalizeValue(titleMatch?.[1]),
+      description: normalizeValue(descriptionMatch?.[1]),
+      variant: variantMatch?.[1] ?? null,
+    };
+  });
+
+  if (toastCalls.length === 0) {
+    return {
+      checklist: {
+        toastShowToastCallsPresent: false,
+        toastContentPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const contentlessToastCalls = toastCalls
+    .map((call, index) => {
+      const hasTitle = call.title.length > 0 && !/^(["'`])\1$/.test(call.title);
+      const hasDescription = call.description.length > 0 && !/^(["'`])\1$/.test(call.description);
+
+      if (hasTitle || hasDescription) {
+        return null;
+      }
+
+      return {
+        toastIndex: index,
+        variant: call.variant,
+        raw: call.raw,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      toastShowToastCallsPresent: true,
+      toastContentPresent: contentlessToastCalls.length === 0,
+    },
+    warnings: contentlessToastCalls.length === 0
+      ? []
+      : [{
+          type: 'toast-missing-content',
+          severity: 'warning',
+          message:
+            'Demo source calls `showToast({...})` without a usable `title` or `description`, so the feedback shell can still animate/render while communicating almost nothing to users or assistive tech.',
+          remediation:
+            'Give each sibling demo `showToast({...})` call at least a meaningful `title` or `description` - ideally both for important states like success/error feedback.',
+          filesChecked: [filePath],
+          hits: {
+            toastCalls: collectLineHits(source, /showToast\s*\(\s*\{/),
+            toastTitles: collectLineHits(source, /\btitle\s*:/),
+            toastDescriptions: collectLineHits(source, /\bdescription\s*:/),
+          },
+          context: {
+            contentlessToastCalls,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -1447,6 +1524,9 @@ async function auditDemoSource() {
   const topbarContentAudit = auditTopbarContent(appSource, appPath);
   warnings.push(...topbarContentAudit.warnings);
 
+  const toastContentAudit = auditToastContent(appSource, appPath);
+  warnings.push(...toastContentAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -1610,6 +1690,8 @@ async function auditDemoSource() {
       glassContentPresent: glassContentAudit.checklist.glassContentPresent,
       topbarRootPresent: topbarContentAudit.checklist.topbarRootPresent,
       topbarContentPresent: topbarContentAudit.checklist.topbarContentPresent,
+      toastShowToastCallsPresent: toastContentAudit.checklist.toastShowToastCallsPresent,
+      toastContentPresent: toastContentAudit.checklist.toastContentPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
@@ -1686,6 +1768,8 @@ async function main() {
       glassContentPresent: false,
       topbarRootPresent: false,
       topbarContentPresent: false,
+      toastShowToastCallsPresent: false,
+      toastContentPresent: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
       switchRootPresent: false,
