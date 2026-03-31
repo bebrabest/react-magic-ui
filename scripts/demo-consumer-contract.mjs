@@ -246,6 +246,67 @@ function auditCheckboxAccessibleNames(source, filePath) {
   };
 }
 
+function auditButtonAccessibleNames(source, filePath) {
+  const buttonTagMatches = [...source.matchAll(/<Button(?!\.)\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Button>)/g)];
+  if (buttonTagMatches.length === 0) {
+    return {
+      checklist: {
+        buttonRootPresent: false,
+        buttonAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledButtons = buttonTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const children = (match[2] ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\{[^}]+\}/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const tag = match[0];
+      const hasAccessibleName = /\b(?:aria-label|aria-labelledby|text)\s*=/.test(attrs) || children.length > 0;
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        buttonIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      buttonRootPresent: true,
+      buttonAccessibleNamesPresent: unlabeledButtons.length === 0,
+    },
+    warnings: unlabeledButtons.length === 0
+      ? []
+      : [{
+          type: 'button-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Button />` examples without a usable accessible name (`text`, visible text children, `aria-label`, or `aria-labelledby`), so icon-only actions can look fine while staying anonymous to assistive tech by contract.',
+          remediation:
+            'Give each sibling demo `<Button>` a real accessible name via the component `text` prop, visible text children, or `aria-label` / `aria-labelledby` for icon-only actions.',
+          filesChecked: [filePath],
+          hits: {
+            buttons: collectLineHits(source, /<Button(?!\.)\b/),
+            buttonAccessibleNames: collectLineHits(source, /\b(?:text|aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledButtons,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -957,6 +1018,9 @@ async function auditDemoSource() {
   const checkboxAccessibleNameAudit = auditCheckboxAccessibleNames(appSource, appPath);
   warnings.push(...checkboxAccessibleNameAudit.warnings);
 
+  const buttonAccessibleNameAudit = auditButtonAccessibleNames(appSource, appPath);
+  warnings.push(...buttonAccessibleNameAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -1104,6 +1168,8 @@ async function auditDemoSource() {
       checkboxHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-checkbox-without-onchange'),
       checkboxRootPresent: checkboxAccessibleNameAudit.checklist.checkboxRootPresent,
       checkboxAccessibleNamesPresent: checkboxAccessibleNameAudit.checklist.checkboxAccessibleNamesPresent,
+      buttonRootPresent: buttonAccessibleNameAudit.checklist.buttonRootPresent,
+      buttonAccessibleNamesPresent: buttonAccessibleNameAudit.checklist.buttonAccessibleNamesPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
@@ -1165,6 +1231,8 @@ async function main() {
       checkboxHandlerProvided: false,
       checkboxRootPresent: false,
       checkboxAccessibleNamesPresent: false,
+      buttonRootPresent: false,
+      buttonAccessibleNamesPresent: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
       switchRootPresent: false,
