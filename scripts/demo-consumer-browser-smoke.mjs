@@ -243,15 +243,29 @@ async function runSmoke(browser, demoConsumerSummary) {
     });
   }
 
-  await step('select updates chosen value in the demo', async () => {
+  await step('select closes with escape without mutating its current value', async () => {
     const combobox = page.locator('#inputs').getByRole('combobox').first();
+
     await combobox.focus();
     await page.keyboard.press('ArrowDown');
-    await page.getByRole('listbox').waitFor({ state: 'visible' });
+    const listbox = page.getByRole('listbox');
+    await listbox.waitFor({ state: 'visible' });
     await page.keyboard.press('Enter');
-    const value = await combobox.textContent();
-    if (!value || /small select/i.test(value)) {
-      throw new Error(`select did not update away from placeholder text (value=${JSON.stringify(value)})`);
+
+    const selectedValue = (await combobox.textContent())?.trim() ?? null;
+    if (!selectedValue || /small select/i.test(selectedValue)) {
+      throw new Error(`select did not update away from placeholder text before escape check (value=${JSON.stringify(selectedValue)})`);
+    }
+
+    await combobox.focus();
+    await page.keyboard.press('ArrowDown');
+    await listbox.waitFor({ state: 'visible' });
+    await page.keyboard.press('Escape');
+    await listbox.waitFor({ state: 'hidden' });
+
+    const valueAfterEscape = (await combobox.textContent())?.trim() ?? null;
+    if (valueAfterEscape !== selectedValue) {
+      throw new Error(`select value changed after escape-close (before=${JSON.stringify(selectedValue)}, after=${JSON.stringify(valueAfterEscape)})`);
     }
   });
 
