@@ -393,12 +393,32 @@ function auditSidebarNavigation(source, filePath) {
   const missingSectionTargets = unique(sidebarItemIds.filter((itemId) => !sectionIds.includes(itemId)));
   const sidebarItemIdsUnique = duplicateSidebarItemIds.length === 0;
   const sidebarItemTargetsExist = missingSectionTargets.length === 0;
+  const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(source);
+  const sidebarItemTags = [...source.matchAll(/<Sidebar\.Item\b([\s\S]*?)>([\s\S]*?)<\/Sidebar\.Item>/g)].map((match) => ({
+    tag: match[0],
+    attrs: match[1] ?? '',
+    children: match[2] ?? '',
+  }));
+  const missingCollapsedAccessibleNames = sidebarMarkedCollapsible
+    ? sidebarItemTags.filter(({ attrs, children }) => {
+        const hasAriaLabel = /\baria-label\s*=/.test(attrs);
+        const childText = children
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\{[^}]+\}/g, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .trim();
+
+        return !hasAriaLabel && childText.length === 0;
+      })
+    : [];
+  const sidebarCollapsedItemAccessibleNamesPresent = missingCollapsedAccessibleNames.length === 0;
 
   return {
     checklist: {
       sidebarItemIdsPresent: sidebarItemIds.length > 0,
       sidebarItemIdsUnique,
       sidebarItemTargetsExist,
+      sidebarCollapsedItemAccessibleNamesPresent,
     },
     warnings: [
       ...(!sidebarItemIdsUnique
@@ -439,6 +459,30 @@ function auditSidebarNavigation(source, filePath) {
                 missingSectionTargets,
                 sidebarItemIds,
                 sectionIds,
+              },
+            },
+          ]
+        : []),
+      ...(!sidebarCollapsedItemAccessibleNamesPresent
+        ? [
+            {
+              type: 'sidebar-collapsed-item-missing-accessible-name',
+              severity: 'warning',
+              message:
+                'Demo source renders a collapsible `<Sidebar>` with one or more `<Sidebar.Item>` entries that have no accessible name, so the collapsed navigation can become icon-only/unnamed for screen readers by contract.',
+              remediation:
+                'When the sibling demo uses a collapsible `<Sidebar>`, give each non-text `<Sidebar.Item>` an `aria-label` (or plain text children) so the collapsed navigation still exposes usable names.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarRoots: collectLineHits(source, /<Sidebar\b/),
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+                ariaLabels: collectLineHits(source, /\baria-label\s*=/),
+              },
+              context: {
+                missingCollapsedAccessibleNameItems: missingCollapsedAccessibleNames.map(({ tag }, index) => ({
+                  sidebarItemIndex: index,
+                  tag,
+                })),
               },
             },
           ]
@@ -760,6 +804,8 @@ async function auditDemoSource() {
       sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
       sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
       sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
+      sidebarCollapsedItemAccessibleNamesPresent:
+        sidebarNavigationAudit.checklist.sidebarCollapsedItemAccessibleNamesPresent,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -809,6 +855,7 @@ async function main() {
       sidebarItemIdsPresent: false,
       sidebarItemIdsUnique: false,
       sidebarItemTargetsExist: false,
+      sidebarCollapsedItemAccessibleNamesPresent: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
