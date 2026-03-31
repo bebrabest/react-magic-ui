@@ -488,6 +488,7 @@ async function main() {
       demoConsumerSummaryPath: demoConsumerSummary?.path ?? null,
       demoConsumerChecklist,
       demoConsumerWarnings: demoConsumerSummary?.data?.warnings ?? [],
+      demoConsumerRemediationArtifacts: demoConsumerSummary?.data?.remediationArtifacts ?? [],
       contractStatus: {
         overall:
           failedCount > 0

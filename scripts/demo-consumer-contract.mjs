@@ -64,10 +64,37 @@ function collectLineHits(source, pattern) {
     }));
 }
 
+function buildSidebarCollapsibleRemediation(appSource) {
+  const sidebarRootPattern = /<Sidebar\b(?![^>]*\bcollapsible(?:=|\s|>))([^>]*)>/s;
+  const match = appSource.match(sidebarRootPattern);
+
+  if (!match) {
+    return null;
+  }
+
+  const originalTag = match[0];
+  const patchedTag = originalTag.replace('<Sidebar', '<Sidebar collapsible');
+  const patchedSource = appSource.replace(sidebarRootPattern, patchedTag);
+
+  return {
+    originalTag,
+    patchedTag,
+    patchedSource,
+    patch: [
+      '--- a/src/App.tsx',
+      '+++ b/src/App.tsx',
+      '@@',
+      `-${originalTag}`,
+      `+${patchedTag}`,
+    ].join('\n'),
+  };
+}
+
 async function auditDemoSource() {
   const appPath = path.join(demoDir, 'src', 'App.tsx');
   const mainPath = path.join(demoDir, 'src', 'main.tsx');
   const warnings = [];
+  const remediationArtifacts = [];
 
   let appSource = '';
   try {
@@ -116,17 +143,54 @@ async function auditDemoSource() {
   const sidebarToggleRequiresCollapsibleFix = sidebarToggleUsed && !sidebarMarkedCollapsible;
 
   if (sidebarToggleRequiresCollapsibleFix) {
+    const sidebarRemediation = buildSidebarCollapsibleRemediation(appSource);
+
+    if (sidebarRemediation) {
+      remediationArtifacts.push({
+        type: 'sidebar-collapsible-patch',
+        targetFile: appPath,
+        patchFile: 'demo-remediation-sidebar-collapsible.patch',
+        previewFile: 'demo-remediation-sidebar-collapsible.preview.txt',
+      });
+    }
+
     warnings.push({
       type: 'sidebar-toggle-without-collapsible',
       severity: 'warning',
       message: 'Demo renders <Sidebar.Toggle /> but the surrounding <Sidebar> is not marked collapsible, so the toggle will render null by contract.',
       remediation: 'Mark the surrounding `<Sidebar>` as `collapsible` (or remove `<Sidebar.Toggle />`) in the sibling demo before expecting collapse behavior in packaged-demo browser smoke.',
       filesChecked: [appPath],
+      remediationArtifacts: sidebarRemediation
+        ? {
+            patchFile: 'demo-remediation-sidebar-collapsible.patch',
+            previewFile: 'demo-remediation-sidebar-collapsible.preview.txt',
+          }
+        : undefined,
       hits: {
         toggle: collectLineHits(appSource, /<Sidebar\.Toggle\b/),
         sidebarRoots: collectLineHits(appSource, /<Sidebar\b/),
       },
     });
+
+    if (sidebarRemediation) {
+      await fs.writeFile(path.join(outDir, 'demo-remediation-sidebar-collapsible.patch'), `${sidebarRemediation.patch}\n`);
+      await fs.writeFile(
+        path.join(outDir, 'demo-remediation-sidebar-collapsible.preview.txt'),
+        [
+          '# target',
+          appPath,
+          '',
+          '# current',
+          sidebarRemediation.originalTag,
+          '',
+          '# suggested',
+          sidebarRemediation.patchedTag,
+          '',
+          '# note',
+          'Apply this in the sibling demo to clear the sidebar-toggle-without-collapsible warning and let packaged demo browser smoke assert collapse behavior end-to-end.',
+        ].join('\n')
+      );
+    }
   }
 
   return {
@@ -138,6 +202,7 @@ async function auditDemoSource() {
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarToggleRequiresCollapsibleFix,
     },
+    remediationArtifacts,
     warnings,
   };
 }
@@ -150,6 +215,7 @@ async function main() {
     repoRoot,
     demoDir,
     outDir,
+    remediationArtifacts: [],
     checklist: {
       styleImportPresent: false,
       internalPackagePathsDetected: false,
@@ -195,6 +261,7 @@ async function main() {
     auditDemoSource()
   );
   summary.warnings = sourceAudit.warnings;
+  summary.remediationArtifacts = sourceAudit.remediationArtifacts;
   summary.checklist = {
     ...summary.checklist,
     ...sourceAudit.checklist,

@@ -122,11 +122,11 @@ npm run build-storybook
 
 # Validate the real demo app against a packed local tarball
 # (also emits source-audit warnings plus a machine-readable checklist + contractStatus in summary.json,
-# with remediation + line-hit context when the audit can locate the mismatch)
+# with remediation + line-hit context when the audit can locate the mismatch, and a ready-to-apply patch hint for the known sidebar mismatch)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball
-# (also carries the demo-consumer checklist + source-audit warnings into the browser-smoke summary/output,
+# (also carries the demo-consumer checklist + source-audit warnings/remediation artifacts into the browser-smoke summary/output,
 # including an overall contract status plus skip/failure counts)
 npm run test:demo-browser-smoke
 ```
