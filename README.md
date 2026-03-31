@@ -124,7 +124,7 @@ npm run build-storybook
 # (also emits source-audit warnings plus a machine-readable checklist + contractStatus in summary.json,
 # with remediation + line-hit context when the audit can locate the mismatch; current checks cover stylesheet import,
 # internal package-path usage, ToastProvider/useToast pairing, controlled Modal dismiss wiring plus modal accessible name/description checks,
-# controlled form/component usage without matching handlers (`Input`, `Select`, `Slider`, `Checkbox`, `Switch`, `Tabs`), plus Input/Checkbox/Switch/Button accessible-name coverage
+# controlled form/component usage without matching handlers (`Input`, `Select`, `Slider`, `Checkbox`, `Switch`, `Tabs`), plus Input/Checkbox/Switch/Slider/Button accessible-name coverage
 # (`label`, `aria-label`, or `aria-labelledby` for Input/Checkbox/Switch; visible text children, `text`, `aria-label`, or `aria-labelledby` for Button),
 # Tabs composition integrity (`Tabs.List`, unique trigger values, trigger/content value alignment, valid initial value/defaultValue),
 # duplicate inline Select option values, missing inline Select option labels, Sidebar item-id integrity (unique itemIds + real matching section ids),

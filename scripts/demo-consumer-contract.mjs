@@ -246,6 +246,59 @@ function auditCheckboxAccessibleNames(source, filePath) {
   };
 }
 
+function auditSliderAccessibleNames(source, filePath) {
+  const sliderTags = findComponentTags(source, 'Slider');
+  if (sliderTags.length === 0) {
+    return {
+      checklist: {
+        sliderRootPresent: false,
+        sliderAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledSliders = sliderTags
+    .map((tag, index) => {
+      const hasAccessibleName = /\b(?:aria-label|aria-labelledby)\s*=/.test(tag);
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        sliderIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      sliderRootPresent: true,
+      sliderAccessibleNamesPresent: unlabeledSliders.length === 0,
+    },
+    warnings: unlabeledSliders.length === 0
+      ? []
+      : [{
+          type: 'slider-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Slider />` examples without a usable accessible name (`aria-label` or `aria-labelledby`), so the control can look fine while remaining anonymous to assistive tech by contract.',
+          remediation:
+            'Give each sibling demo `<Slider>` a real accessible name via `aria-label` or `aria-labelledby`; nearby visual size text is not a reliable control label for the slider itself.',
+          filesChecked: [filePath],
+          hits: {
+            sliders: collectLineHits(source, /<Slider(?!\.)\b/),
+            sliderLabels: collectLineHits(source, /\b(?:aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledSliders,
+          },
+        }],
+  };
+}
+
 function auditInputAccessibleNames(source, filePath) {
   const inputTagMatches = [...source.matchAll(/<Input(?!\.)\b([\s\S]*?)\/>/g)];
   if (inputTagMatches.length === 0) {
@@ -1076,6 +1129,9 @@ async function auditDemoSource() {
   const inputAccessibleNameAudit = auditInputAccessibleNames(appSource, appPath);
   warnings.push(...inputAccessibleNameAudit.warnings);
 
+  const sliderAccessibleNameAudit = auditSliderAccessibleNames(appSource, appPath);
+  warnings.push(...sliderAccessibleNameAudit.warnings);
+
   const buttonAccessibleNameAudit = auditButtonAccessibleNames(appSource, appPath);
   warnings.push(...buttonAccessibleNameAudit.warnings);
 
@@ -1224,6 +1280,8 @@ async function auditDemoSource() {
       selectHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-select-without-onchange'),
       sliderControlledUsage: /<Slider\b[^>]*\bvalue\s*=/.test(appSource),
       sliderHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-slider-without-onchange'),
+      sliderRootPresent: sliderAccessibleNameAudit.checklist.sliderRootPresent,
+      sliderAccessibleNamesPresent: sliderAccessibleNameAudit.checklist.sliderAccessibleNamesPresent,
       checkboxControlledUsage: /<Checkbox\b[^>]*\bchecked\s*=/.test(appSource),
       checkboxHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-checkbox-without-onchange'),
       checkboxRootPresent: checkboxAccessibleNameAudit.checklist.checkboxRootPresent,
@@ -1289,6 +1347,8 @@ async function main() {
       selectHandlerProvided: false,
       sliderControlledUsage: false,
       sliderHandlerProvided: false,
+      sliderRootPresent: false,
+      sliderAccessibleNamesPresent: false,
       checkboxControlledUsage: false,
       checkboxHandlerProvided: false,
       checkboxRootPresent: false,
