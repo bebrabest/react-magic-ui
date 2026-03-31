@@ -299,6 +299,59 @@ function auditSliderAccessibleNames(source, filePath) {
   };
 }
 
+function auditSelectAccessibleNames(source, filePath) {
+  const selectTags = findComponentTags(source, 'Select');
+  if (selectTags.length === 0) {
+    return {
+      checklist: {
+        selectRootPresent: false,
+        selectAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledSelects = selectTags
+    .map((tag, index) => {
+      const hasAccessibleName = /\b(?:label|aria-label|aria-labelledby)\s*=/.test(tag);
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        selectIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      selectRootPresent: true,
+      selectAccessibleNamesPresent: unlabeledSelects.length === 0,
+    },
+    warnings: unlabeledSelects.length === 0
+      ? []
+      : [{
+          type: 'select-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Select />` examples without a usable accessible name (`label`, `aria-label`, or `aria-labelledby`), so the control can look fine while remaining semantically anonymous because placeholder text is not a real label.',
+          remediation:
+            'Give each sibling demo `<Select>` a real accessible name via the component `label` prop (preferred) or `aria-label` / `aria-labelledby`, instead of relying on placeholder text alone.',
+          filesChecked: [filePath],
+          hits: {
+            selects: collectLineHits(source, /<Select\b/),
+            selectLabels: collectLineHits(source, /\b(?:label|aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledSelects,
+          },
+        }],
+  };
+}
+
 function auditInputAccessibleNames(source, filePath) {
   const inputTagMatches = [...source.matchAll(/<Input(?!\.)\b([\s\S]*?)\/>/g)];
   if (inputTagMatches.length === 0) {
@@ -1120,6 +1173,9 @@ async function auditDemoSource() {
   const selectOptionAudit = auditSelectOptionValues(appSource, appPath);
   warnings.push(...selectOptionAudit.warnings);
 
+  const selectAccessibleNameAudit = auditSelectAccessibleNames(appSource, appPath);
+  warnings.push(...selectAccessibleNameAudit.warnings);
+
   const switchAccessibleNameAudit = auditSwitchAccessibleNames(appSource, appPath);
   warnings.push(...switchAccessibleNameAudit.warnings);
 
@@ -1278,6 +1334,8 @@ async function auditDemoSource() {
       inputAccessibleNamesPresent: inputAccessibleNameAudit.checklist.inputAccessibleNamesPresent,
       selectControlledUsage: /<Select\b[^>]*\bvalue\s*=/.test(appSource),
       selectHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-select-without-onchange'),
+      selectRootPresent: selectAccessibleNameAudit.checklist.selectRootPresent,
+      selectAccessibleNamesPresent: selectAccessibleNameAudit.checklist.selectAccessibleNamesPresent,
       sliderControlledUsage: /<Slider\b[^>]*\bvalue\s*=/.test(appSource),
       sliderHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-slider-without-onchange'),
       sliderRootPresent: sliderAccessibleNameAudit.checklist.sliderRootPresent,
@@ -1299,7 +1357,6 @@ async function auditDemoSource() {
       tabsTriggerValuesUnique: tabsCompositionAudit.checklist.tabsTriggerValuesUnique,
       tabsTriggerContentPairsAligned: tabsCompositionAudit.checklist.tabsTriggerContentPairsAligned,
       tabsInitialValueMatchesTrigger: tabsCompositionAudit.checklist.tabsInitialValueMatchesTrigger,
-      selectRootPresent: selectOptionAudit.checklist.selectRootPresent,
       selectOptionValuesUnique: selectOptionAudit.checklist.selectOptionValuesUnique,
       selectOptionLabelsPresent: selectOptionAudit.checklist.selectOptionLabelsPresent,
       sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
@@ -1345,6 +1402,8 @@ async function main() {
       inputAccessibleNamesPresent: false,
       selectControlledUsage: false,
       selectHandlerProvided: false,
+      selectRootPresent: false,
+      selectAccessibleNamesPresent: false,
       sliderControlledUsage: false,
       sliderHandlerProvided: false,
       sliderRootPresent: false,
