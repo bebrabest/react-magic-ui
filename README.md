@@ -127,7 +127,8 @@ npm run build-storybook
 # controlled form/component usage without matching handlers (`Input`, `Select`, `Slider`, `Checkbox`, `Switch`, `Tabs`),
 # Tabs composition integrity (`Tabs.List`, unique trigger values, trigger/content value alignment, valid initial value/defaultValue),
 # duplicate inline Select option values, missing inline Select option labels, Sidebar item-id integrity (unique itemIds + real matching section ids),
-# collapsed-sidebar item accessible names, Sidebar.Toggle/collapsible pairing, and risky width overrides on collapsible sidebars)
+# Sidebar initial activeItemId alignment, collapsed-sidebar item accessible names, Sidebar.Toggle/collapsible pairing,
+# and risky width overrides on collapsible sidebars)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball

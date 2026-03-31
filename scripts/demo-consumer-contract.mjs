@@ -378,6 +378,31 @@ function collectSidebarItemIds(source) {
   return [...source.matchAll(/<Sidebar\.Item\b[^>]*\bitemId\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]);
 }
 
+function collectSidebarActiveItemValues(source) {
+  const sidebarRootTags = [...source.matchAll(/<Sidebar\b(?!\.)[^>]*>/g)].map((match) => match[0]);
+
+  return sidebarRootTags.flatMap((tag) => {
+    const literalValue = tag.match(/\bactiveItemId\s*=\s*["']([^"']+)["']/)?.[1];
+    if (literalValue) {
+      return [literalValue];
+    }
+
+    const stateIdentifier = tag.match(/\bactiveItemId\s*=\s*\{\s*([A-Za-z_$][\w$]*)\s*\}/)?.[1];
+    if (!stateIdentifier) {
+      return [];
+    }
+
+    const useStateMatch = source.match(
+      new RegExp(
+        `(?:const|let|var)\\s*\\[\\s*${stateIdentifier}\\s*,[^\\]]*\\]\\s*=\\s*useState\\s*\\(\\s*["']([^"']+)["']\\s*\\)`,
+        's'
+      )
+    );
+
+    return useStateMatch?.[1] ? [useStateMatch[1]] : [];
+  });
+}
+
 function collectSectionIds(source) {
   return [
     ...source.matchAll(/<(?:section|div)\b[^>]*\bid\s*=\s*["']([^"']+)["']/g),
@@ -386,6 +411,7 @@ function collectSectionIds(source) {
 
 function auditSidebarNavigation(source, filePath) {
   const sidebarItemIds = collectSidebarItemIds(source);
+  const sidebarActiveItemValues = unique(collectSidebarActiveItemValues(source));
   const sectionIds = unique(collectSectionIds(source));
   const duplicateSidebarItemIds = unique(
     sidebarItemIds.filter((itemId, index) => sidebarItemIds.indexOf(itemId) !== index)
@@ -393,6 +419,8 @@ function auditSidebarNavigation(source, filePath) {
   const missingSectionTargets = unique(sidebarItemIds.filter((itemId) => !sectionIds.includes(itemId)));
   const sidebarItemIdsUnique = duplicateSidebarItemIds.length === 0;
   const sidebarItemTargetsExist = missingSectionTargets.length === 0;
+  const sidebarActiveItemIdsMatchItems = sidebarActiveItemValues.every((value) => sidebarItemIds.includes(value));
+  const sidebarInitialActiveItemMismatches = sidebarActiveItemValues.filter((value) => !sidebarItemIds.includes(value));
   const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(source);
   const sidebarItemTags = [...source.matchAll(/<Sidebar\.Item\b([\s\S]*?)>([\s\S]*?)<\/Sidebar\.Item>/g)].map((match) => ({
     tag: match[0],
@@ -418,6 +446,7 @@ function auditSidebarNavigation(source, filePath) {
       sidebarItemIdsPresent: sidebarItemIds.length > 0,
       sidebarItemIdsUnique,
       sidebarItemTargetsExist,
+      sidebarActiveItemIdsMatchItems,
       sidebarCollapsedItemAccessibleNamesPresent,
     },
     warnings: [
@@ -483,6 +512,29 @@ function auditSidebarNavigation(source, filePath) {
                   sidebarItemIndex: index,
                   tag,
                 })),
+              },
+            },
+          ]
+        : []),
+      ...(!sidebarActiveItemIdsMatchItems
+        ? [
+            {
+              type: 'sidebar-active-item-mismatch',
+              severity: 'warning',
+              message:
+                'Demo source gives `<Sidebar activeItemId>` an initial value that does not match any `<Sidebar.Item itemId>`, so the consumer example can boot into a dead/unsynced active state by contract.',
+              remediation:
+                'Keep the demo sidebar `activeItemId` (or the `useState(...)` value that feeds it) aligned with a real `<Sidebar.Item itemId>` so selected navigation state starts on a valid item.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarRoots: collectLineHits(source, /<Sidebar\b/),
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+                activeState: collectLineHits(source, /useState\s*\(\s*["'][^"']+["']\s*\)|\bactiveItemId\s*=/),
+              },
+              context: {
+                sidebarActiveItemValues,
+                sidebarItemIds,
+                sidebarInitialActiveItemMismatches,
               },
             },
           ]
@@ -886,6 +938,7 @@ async function auditDemoSource() {
       sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
       sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
       sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
+      sidebarActiveItemIdsMatchItems: sidebarNavigationAudit.checklist.sidebarActiveItemIdsMatchItems,
       sidebarCollapsedItemAccessibleNamesPresent:
         sidebarNavigationAudit.checklist.sidebarCollapsedItemAccessibleNamesPresent,
       sidebarTogglePresent: sidebarToggleUsed,
@@ -940,6 +993,7 @@ async function main() {
       sidebarItemIdsPresent: false,
       sidebarItemIdsUnique: false,
       sidebarItemTargetsExist: false,
+      sidebarActiveItemIdsMatchItems: false,
       sidebarCollapsedItemAccessibleNamesPresent: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
