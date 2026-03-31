@@ -125,7 +125,8 @@ npm run build-storybook
 # with remediation + line-hit context when the audit can locate the mismatch; current checks cover stylesheet import,
 # internal package-path usage, ToastProvider/useToast pairing, controlled Modal dismiss wiring, controlled form/component usage without matching handlers
 # (`Input`, `Select`, `Slider`, `Checkbox`, `Switch`, `Tabs`), Tabs composition integrity (`Tabs.List`, unique trigger values, trigger/content value alignment),
-# duplicate inline Select option values, Sidebar.Toggle/collapsible pairing, and risky width overrides on collapsible sidebars)
+# duplicate inline Select option values, Sidebar item-id integrity (unique itemIds + real matching section ids), Sidebar.Toggle/collapsible pairing,
+# and risky width overrides on collapsible sidebars)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball

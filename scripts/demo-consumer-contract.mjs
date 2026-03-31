@@ -296,6 +296,79 @@ function auditSelectOptionValues(source, filePath) {
   };
 }
 
+function collectSidebarItemIds(source) {
+  return [...source.matchAll(/<Sidebar\.Item\b[^>]*\bitemId\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]);
+}
+
+function collectSectionIds(source) {
+  return [
+    ...source.matchAll(/<(?:section|div)\b[^>]*\bid\s*=\s*["']([^"']+)["']/g),
+  ].map((match) => match[1]);
+}
+
+function auditSidebarNavigation(source, filePath) {
+  const sidebarItemIds = collectSidebarItemIds(source);
+  const sectionIds = unique(collectSectionIds(source));
+  const duplicateSidebarItemIds = unique(
+    sidebarItemIds.filter((itemId, index) => sidebarItemIds.indexOf(itemId) !== index)
+  );
+  const missingSectionTargets = unique(sidebarItemIds.filter((itemId) => !sectionIds.includes(itemId)));
+  const sidebarItemIdsUnique = duplicateSidebarItemIds.length === 0;
+  const sidebarItemTargetsExist = missingSectionTargets.length === 0;
+
+  return {
+    checklist: {
+      sidebarItemIdsPresent: sidebarItemIds.length > 0,
+      sidebarItemIdsUnique,
+      sidebarItemTargetsExist,
+    },
+    warnings: [
+      ...(!sidebarItemIdsUnique
+        ? [
+            {
+              type: 'sidebar-duplicate-item-ids',
+              severity: 'warning',
+              message:
+                'Demo source renders duplicate `<Sidebar.Item itemId="...">` values, which makes active-state tracking and scroll targeting ambiguous by contract.',
+              remediation:
+                'Give each sibling demo `<Sidebar.Item>` a unique `itemId` so active navigation state and scroll targeting stay unambiguous.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+              },
+              context: {
+                duplicateSidebarItemIds,
+                sidebarItemIds,
+              },
+            },
+          ]
+        : []),
+      ...(!sidebarItemTargetsExist
+        ? [
+            {
+              type: 'sidebar-item-target-missing',
+              severity: 'warning',
+              message:
+                'Demo source renders one or more `<Sidebar.Item itemId="...">` values that do not match any demo section/container `id`, so navigation clicks can silently point at nothing by contract.',
+              remediation:
+                'Keep sibling demo `<Sidebar.Item itemId>` values aligned with real section/container `id` attributes so sidebar navigation scrolls to actual content.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+                sections: collectLineHits(source, /<(?:section|div)\b[^>]*\bid\s*=/),
+              },
+              context: {
+                missingSectionTargets,
+                sidebarItemIds,
+                sectionIds,
+              },
+            },
+          ]
+        : []),
+    ],
+  };
+}
+
 function auditControlledComponentUsage({
   source,
   componentName,
@@ -452,6 +525,9 @@ async function auditDemoSource() {
   const selectOptionAudit = auditSelectOptionValues(appSource, appPath);
   warnings.push(...selectOptionAudit.warnings);
 
+  const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
+  warnings.push(...sidebarNavigationAudit.warnings);
+
   const controlledComponentAudits = [
     auditControlledComponentUsage({
       source: appSource,
@@ -601,6 +677,9 @@ async function auditDemoSource() {
       tabsTriggerContentPairsAligned: tabsCompositionAudit.checklist.tabsTriggerContentPairsAligned,
       selectRootPresent: selectOptionAudit.checklist.selectRootPresent,
       selectOptionValuesUnique: selectOptionAudit.checklist.selectOptionValuesUnique,
+      sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
+      sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
+      sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -645,6 +724,9 @@ async function main() {
       tabsTriggerContentPairsAligned: false,
       selectRootPresent: false,
       selectOptionValuesUnique: false,
+      sidebarItemIdsPresent: false,
+      sidebarItemIdsUnique: false,
+      sidebarItemTargetsExist: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
