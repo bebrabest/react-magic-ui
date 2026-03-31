@@ -136,6 +136,12 @@ async function main() {
     },
     steps: [],
     warnings: [],
+    contractStatus: {
+      overall: 'pending',
+      warningCount: 0,
+      failedStepCount: 0,
+      allStepsPassed: false,
+    },
   };
 
   const logStep = async (name, fn) => {
@@ -203,6 +209,12 @@ async function main() {
   summary.tarballName = tarballName;
   summary.tarballPath = tarballPath;
   summary.packTempDir = packTempDir;
+  summary.contractStatus = {
+    overall: summary.warnings.length > 0 ? 'passed-with-warnings' : 'passed',
+    warningCount: summary.warnings.length,
+    failedStepCount: summary.steps.filter((step) => step.status === 'failed').length,
+    allStepsPassed: summary.steps.every((step) => step.status === 'passed'),
+  };
 
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));

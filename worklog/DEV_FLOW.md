@@ -45,8 +45,8 @@ Primary commands from the root:
 ## Demo sync notes
 
 - the sibling demo contract and review checklist now live in `worklog/DEMO_SYNC_CONTRACT.md`
-- `test:demo-consumer` is the source of truth for build-level demo sync status and writes the machine-readable checklist into its `summary.json`
-- `test:demo-browser-smoke` is the higher-confidence rendered consumer check and carries those warnings forward
+- `test:demo-consumer` is the source of truth for build-level demo sync status and writes the machine-readable checklist plus a compact `contractStatus.overall` summary into `summary.json`
+- `test:demo-browser-smoke` is the higher-confidence rendered consumer check and carries those warnings forward, along with skip/failure counts and its own `contractStatus.overall`
 
 ## Recommended follow-up cleanup
 

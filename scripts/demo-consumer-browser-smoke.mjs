@@ -479,6 +479,9 @@ async function main() {
     await fs.writeFile(path.join(outDir, 'preview-log.txt'), previewLogs.join(''));
 
     const demoConsumerChecklist = demoConsumerSummary?.data?.checklist ?? null;
+    const warningCount = demoConsumerSummary?.data?.warnings?.length ?? 0;
+    const skippedCount = results.filter((result) => result.status === 'skipped').length;
+    const failedCount = results.filter((result) => result.status === 'failed').length;
     const browserSummary = {
       outDir,
       previewUrl,
@@ -486,9 +489,22 @@ async function main() {
       demoConsumerChecklist,
       demoConsumerWarnings: demoConsumerSummary?.data?.warnings ?? [],
       contractStatus: {
+        overall:
+          failedCount > 0
+            ? 'failed'
+            : warningCount > 0 && skippedCount > 0
+              ? 'passed-with-warnings-and-skips'
+              : warningCount > 0
+                ? 'passed-with-warnings'
+                : skippedCount > 0
+                  ? 'passed-with-skips'
+                  : 'passed',
         demoConsumerPassed: Boolean(demoConsumerSummary),
-        demoConsumerHasWarnings: (demoConsumerSummary?.data?.warnings?.length ?? 0) > 0,
-        browserSmokePassed: !results.some((result) => result.status === 'failed'),
+        demoConsumerHasWarnings: warningCount > 0,
+        browserSmokePassed: failedCount === 0,
+        warningCount,
+        skippedCount,
+        failedCount,
       },
       results,
     };

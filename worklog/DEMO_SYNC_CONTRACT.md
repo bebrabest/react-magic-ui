@@ -71,7 +71,7 @@ Output folder:
 
 Key artifacts:
 
-- `summary.json` (includes inherited `demoConsumerChecklist`, `demoConsumerWarnings`, and a top-level `contractStatus` snapshot)
+- `summary.json` (includes inherited `demoConsumerChecklist`, `demoConsumerWarnings`, and a top-level `contractStatus` snapshot with explicit `overall`, warning, skip, and failure counts)
 - `results.json`
 - `final-state.png`
 - `playwright-log.txt`
