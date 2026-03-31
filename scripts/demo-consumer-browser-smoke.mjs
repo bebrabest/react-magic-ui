@@ -195,6 +195,52 @@ async function runSmoke(browser, demoConsumerSummary) {
         throw new Error(`sidebar width did not grow after re-expand (collapsed=${afterCollapse.width}, expanded=${afterExpand.width})`);
       }
     });
+
+    await step('collapsed sidebar preserves accessible navigation and can still change sections', async () => {
+      const sidebar = page.locator('aside').filter({ has: page.getByRole('button', { name: /^overview$/i }) }).first();
+      const collapseToggle = page.getByRole('button', { name: /collapse sidebar/i }).first();
+
+      await sidebar.waitFor({ state: 'visible' });
+      await collapseToggle.click();
+      await page.waitForFunction(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.some((button) => /expand sidebar/i.test(button.getAttribute('aria-label') ?? ''));
+      });
+
+      const navigationButtonCount = await page.locator('aside nav button[data-sidebar-item="true"]').count();
+      if (navigationButtonCount < 4) {
+        throw new Error(`expected at least 4 collapsed nav items, found ${navigationButtonCount}`);
+      }
+
+      const layoutButton = page.getByRole('button', { name: /^navigation$/i });
+      await layoutButton.waitFor({ state: 'visible' });
+      await layoutButton.focus();
+      await page.keyboard.press('Enter');
+
+      await page.waitForFunction(() => {
+        const section = document.getElementById('layout');
+        if (!(section instanceof HTMLElement)) {
+          return false;
+        }
+
+        const { top } = section.getBoundingClientRect();
+        return top >= 0 && top <= window.innerHeight * 0.35;
+      });
+
+      await page.waitForFunction(() => {
+        const button = Array.from(document.querySelectorAll('aside nav button[data-sidebar-item="true"]')).find(
+          (node) => node.getAttribute('aria-label') === 'Navigation'
+        );
+        return button?.getAttribute('aria-current') === 'page';
+      });
+
+      const expandToggle = page.getByRole('button', { name: /expand sidebar/i }).first();
+      await expandToggle.click();
+      await page.waitForFunction(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.some((button) => /collapse sidebar/i.test(button.getAttribute('aria-label') ?? ''));
+      });
+    });
   }
 
   await step('select updates chosen value in the demo', async () => {
