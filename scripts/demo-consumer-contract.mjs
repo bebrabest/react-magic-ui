@@ -529,6 +529,67 @@ function auditBadgeContent(source, filePath) {
   };
 }
 
+function auditCardContent(source, filePath) {
+  const cardTagMatches = [...source.matchAll(/<Card(?!\.)\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Card>)/g)];
+  if (cardTagMatches.length === 0) {
+    return {
+      checklist: {
+        cardRootPresent: false,
+        cardContentPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const emptyCards = cardTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const children = (match[2] ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\{[^}]+\}/g, ' token ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const tag = match[0];
+      const hasContent = /\b(?:aria-label|aria-labelledby)\s*=/.test(attrs) || children.length > 0;
+
+      if (hasContent) {
+        return null;
+      }
+
+      return {
+        cardIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      cardRootPresent: true,
+      cardContentPresent: emptyCards.length === 0,
+    },
+    warnings: emptyCards.length === 0
+      ? []
+      : [{
+          type: 'card-missing-content',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Card>` examples without usable text content or an accessible label, so the card can look structurally present while communicating nothing meaningful to users or assistive tech.',
+          remediation:
+            'Give each sibling demo `<Card>` visible content when possible, or at minimum provide `aria-label` / `aria-labelledby` if a card is intentionally decorative or icon-only.',
+          filesChecked: [filePath],
+          hits: {
+            cards: collectLineHits(source, /<Card(?!\.)\b/),
+            cardLabels: collectLineHits(source, /\b(?:aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            emptyCards,
+          },
+        }],
+  };
+}
+
 function auditTopbarContent(source, filePath) {
   const topbarTags = findComponentTags(source, 'Topbar');
   if (topbarTags.length === 0) {
@@ -1316,6 +1377,9 @@ async function auditDemoSource() {
   const badgeContentAudit = auditBadgeContent(appSource, appPath);
   warnings.push(...badgeContentAudit.warnings);
 
+  const cardContentAudit = auditCardContent(appSource, appPath);
+  warnings.push(...cardContentAudit.warnings);
+
   const topbarContentAudit = auditTopbarContent(appSource, appPath);
   warnings.push(...topbarContentAudit.warnings);
 
@@ -1476,6 +1540,8 @@ async function auditDemoSource() {
       buttonAccessibleNamesPresent: buttonAccessibleNameAudit.checklist.buttonAccessibleNamesPresent,
       badgeRootPresent: badgeContentAudit.checklist.badgeRootPresent,
       badgeContentPresent: badgeContentAudit.checklist.badgeContentPresent,
+      cardRootPresent: cardContentAudit.checklist.cardRootPresent,
+      cardContentPresent: cardContentAudit.checklist.cardContentPresent,
       topbarRootPresent: topbarContentAudit.checklist.topbarRootPresent,
       topbarContentPresent: topbarContentAudit.checklist.topbarContentPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
@@ -1548,6 +1614,8 @@ async function main() {
       buttonAccessibleNamesPresent: false,
       badgeRootPresent: false,
       badgeContentPresent: false,
+      cardRootPresent: false,
+      cardContentPresent: false,
       topbarRootPresent: false,
       topbarContentPresent: false,
       switchControlledUsage: false,
