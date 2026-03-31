@@ -468,6 +468,67 @@ function auditButtonAccessibleNames(source, filePath) {
   };
 }
 
+function auditBadgeContent(source, filePath) {
+  const badgeTagMatches = [...source.matchAll(/<Badge(?!\.)\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Badge>)/g)];
+  if (badgeTagMatches.length === 0) {
+    return {
+      checklist: {
+        badgeRootPresent: false,
+        badgeContentPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const emptyBadges = badgeTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const children = (match[2] ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\{[^}]+\}/g, ' token ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const tag = match[0];
+      const hasContent = /\b(?:aria-label|aria-labelledby)\s*=/.test(attrs) || children.length > 0;
+
+      if (hasContent) {
+        return null;
+      }
+
+      return {
+        badgeIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      badgeRootPresent: true,
+      badgeContentPresent: emptyBadges.length === 0,
+    },
+    warnings: emptyBadges.length === 0
+      ? []
+      : [{
+          type: 'badge-missing-content',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Badge>` examples without usable text content or an accessible label, so the badge can look structurally present while communicating nothing to sighted users or assistive tech.',
+          remediation:
+            'Give each sibling demo `<Badge>` visible text children when possible, or at minimum provide `aria-label` / `aria-labelledby` if the badge is intentionally icon-only.',
+          filesChecked: [filePath],
+          hits: {
+            badges: collectLineHits(source, /<Badge(?!\.)\b/),
+            badgeLabels: collectLineHits(source, /\b(?:aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            emptyBadges,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -1191,6 +1252,9 @@ async function auditDemoSource() {
   const buttonAccessibleNameAudit = auditButtonAccessibleNames(appSource, appPath);
   warnings.push(...buttonAccessibleNameAudit.warnings);
 
+  const badgeContentAudit = auditBadgeContent(appSource, appPath);
+  warnings.push(...badgeContentAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -1346,6 +1410,8 @@ async function auditDemoSource() {
       checkboxAccessibleNamesPresent: checkboxAccessibleNameAudit.checklist.checkboxAccessibleNamesPresent,
       buttonRootPresent: buttonAccessibleNameAudit.checklist.buttonRootPresent,
       buttonAccessibleNamesPresent: buttonAccessibleNameAudit.checklist.buttonAccessibleNamesPresent,
+      badgeRootPresent: badgeContentAudit.checklist.badgeRootPresent,
+      badgeContentPresent: badgeContentAudit.checklist.badgeContentPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
@@ -1414,6 +1480,8 @@ async function main() {
       checkboxAccessibleNamesPresent: false,
       buttonRootPresent: false,
       buttonAccessibleNamesPresent: false,
+      badgeRootPresent: false,
+      badgeContentPresent: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
       switchRootPresent: false,
