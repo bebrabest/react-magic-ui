@@ -122,7 +122,8 @@ npm run build-storybook
 
 # Validate the real demo app against a packed local tarball
 # (also emits source-audit warnings plus a machine-readable checklist + contractStatus in summary.json,
-# with remediation + line-hit context when the audit can locate the mismatch, and a ready-to-apply patch hint for the known sidebar mismatch)
+# with remediation + line-hit context when the audit can locate the mismatch; current checks cover stylesheet import,
+# internal package-path usage, Sidebar.Toggle/collapsible pairing, and risky width overrides on collapsible sidebars)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball

@@ -90,6 +90,36 @@ function buildSidebarCollapsibleRemediation(appSource) {
   };
 }
 
+function findSidebarRootTag(appSource) {
+  const sidebarRootMatch = appSource.match(/<Sidebar\b[^>]*>/s);
+  return sidebarRootMatch?.[0] ?? null;
+}
+
+function detectSidebarWidthOverrideRisk(sidebarRootTag) {
+  if (!sidebarRootTag) {
+    return null;
+  }
+
+  const rootClassNameMatch = sidebarRootTag.match(/rootClassName\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*"([^"]*)"\s*\})/s);
+  const rootClassValue = rootClassNameMatch?.[1] ?? rootClassNameMatch?.[2] ?? rootClassNameMatch?.[3] ?? '';
+
+  if (!rootClassValue) {
+    return null;
+  }
+
+  const riskyWidthClassPattern = /(^|\s)(?:!?(?:w|min-w|max-w)-\[[^\]]+\]|!?w-(?:full|screen|\d+\/\d+|\d+)|!?min-w-(?:\[[^\]]+\]|\d+)|!?max-w-(?:\[[^\]]+\]|\d+))(?:\s|$)/;
+  if (!riskyWidthClassPattern.test(rootClassValue)) {
+    return null;
+  }
+
+  return {
+    rootClassValue,
+    riskyClasses: rootClassValue
+      .split(/\s+/)
+      .filter((token) => token && riskyWidthClassPattern.test(` ${token} `)),
+  };
+}
+
 async function auditDemoSource() {
   const appPath = path.join(demoDir, 'src', 'App.tsx');
   const mainPath = path.join(demoDir, 'src', 'main.tsx');
@@ -120,6 +150,25 @@ async function auditDemoSource() {
       message: 'Demo app does not explicitly import react-magic-ui/style.css from src/main.tsx or src/App.tsx.',
       remediation: 'Add `import "react-magic-ui/style.css"` to the demo entrypoint so the packaged library CSS contract matches real consumer usage.',
       filesChecked: [mainPath, appPath],
+    });
+  }
+
+  const sidebarRootTag = findSidebarRootTag(appSource);
+  const sidebarWidthOverrideRisk = detectSidebarWidthOverrideRisk(sidebarRootTag);
+  if (sidebarWidthOverrideRisk) {
+    warnings.push({
+      type: 'sidebar-root-width-override',
+      severity: 'warning',
+      message: 'Demo Sidebar rootClassName includes width utility classes that can override the component\'s collapsible width contract.',
+      remediation: 'Avoid fixed/forced width utilities on `<Sidebar rootClassName={...}>` when using `collapsible`; prefer non-width styling hooks and let the component own its expanded/collapsed width.',
+      filesChecked: [appPath],
+      hits: {
+        sidebarRoots: collectLineHits(appSource, /<Sidebar\b/),
+      },
+      context: {
+        rootClassName: sidebarWidthOverrideRisk.rootClassValue,
+        riskyClasses: sidebarWidthOverrideRisk.riskyClasses,
+      },
     });
   }
 
@@ -200,6 +249,7 @@ async function auditDemoSource() {
       internalPackagePathsDetected: internalPackagePathMatches.length > 0,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
+      sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
       sidebarToggleRequiresCollapsibleFix,
     },
     remediationArtifacts,
@@ -219,6 +269,7 @@ async function main() {
     checklist: {
       styleImportPresent: false,
       internalPackagePathsDetected: false,
+      sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
       packedLibraryInstallPassed: false,

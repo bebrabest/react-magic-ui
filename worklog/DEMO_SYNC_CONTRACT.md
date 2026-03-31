@@ -20,12 +20,16 @@ This repo now treats demo sync as an explicit contract instead of an informal "r
 
 ### Current known mismatch
 
-- `sidebar-toggle-without-collapsible`: the sibling demo renders `<Sidebar.Toggle />` without marking the surrounding `<Sidebar>` as `collapsible`, so the toggle cannot be asserted end-to-end yet
+- none right now - the sidebar toggle/collapsible contract is fixed and browser smoke now asserts collapse behavior for real
 
-Browser smoke now treats this mismatch explicitly:
+### Source-audit checks that matter
 
-- if the warning is present, the sidebar-collapse step is recorded as `skipped`
-- if the warning disappears, browser smoke automatically upgrades to a real collapse/expand assertion against the packaged demo
+The demo source audit is intentionally opinionated about a few high-signal consumer-contract mistakes:
+
+- `missing-style-import` - the demo must import `react-magic-ui/style.css`
+- `internal-package-path-import` - the demo must not depend on `react-magic-ui/dist/*` internals
+- `sidebar-toggle-without-collapsible` - if the demo renders `<Sidebar.Toggle />`, the surrounding `<Sidebar>` must actually be `collapsible`
+- `sidebar-root-width-override` - a collapsible sidebar should not also force width via `rootClassName`, because width utilities can silently override the component's own expanded/collapsed contract
 
 ## Validation commands
 
