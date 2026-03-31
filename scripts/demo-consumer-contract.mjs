@@ -264,7 +264,17 @@ function extractInlineSelectOptions(selectTag) {
     return [];
   }
 
-  return [...optionsMatch[1].matchAll(/\bvalue\s*:\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  return [...optionsMatch[1].matchAll(/\{([\s\S]*?)\}/g)].map((match) => {
+    const objectSource = match[1];
+    const valueMatch = objectSource.match(/\bvalue\s*:\s*['"]([^'"]+)['"]/);
+    const labelMatch = objectSource.match(/\blabel\s*:\s*['"]([^'"]*)['"]/);
+
+    return {
+      raw: `{${objectSource}}`,
+      value: valueMatch?.[1] ?? null,
+      label: labelMatch?.[1] ?? null,
+    };
+  });
 }
 
 function auditSelectOptionValues(source, filePath) {
@@ -279,27 +289,35 @@ function auditSelectOptionValues(source, filePath) {
     };
   }
 
-  const duplicateContexts = selectTags
-    .map((tag, index) => {
-      const optionValues = extractInlineSelectOptions(tag);
-      const duplicateValues = optionValues.filter((value, valueIndex) => optionValues.indexOf(value) !== valueIndex);
+  const selectAnalysis = selectTags.map((tag, index) => {
+    const options = extractInlineSelectOptions(tag);
+    const optionValues = options.map((option) => option.value).filter(Boolean);
+    const duplicateValues = optionValues.filter((value, valueIndex) => optionValues.indexOf(value) !== valueIndex);
+    const missingLabelOptions = options.filter(
+      (option) => option.value && (option.label == null || option.label.trim() === '')
+    );
 
-      return {
-        index,
-        tag,
-        optionValues,
-        duplicateValues: unique(duplicateValues),
-      };
-    })
-    .filter((entry) => entry.duplicateValues.length > 0);
+    return {
+      index,
+      tag,
+      options,
+      optionValues,
+      duplicateValues: unique(duplicateValues),
+      missingLabelOptions,
+    };
+  });
+
+  const duplicateContexts = selectAnalysis.filter((entry) => entry.duplicateValues.length > 0);
+  const missingLabelContexts = selectAnalysis.filter((entry) => entry.missingLabelOptions.length > 0);
 
   return {
     checklist: {
       selectRootPresent: true,
       selectOptionValuesUnique: duplicateContexts.length === 0,
+      selectOptionLabelsPresent: missingLabelContexts.length === 0,
     },
-    warnings:
-      duplicateContexts.length === 0
+    warnings: [
+      ...(duplicateContexts.length === 0
         ? []
         : [
             {
@@ -323,7 +341,36 @@ function auditSelectOptionValues(source, filePath) {
                 })),
               },
             },
-          ],
+          ]),
+      ...(missingLabelContexts.length === 0
+        ? []
+        : [
+            {
+              type: 'select-option-missing-label',
+              severity: 'warning',
+              message:
+                'Demo source renders inline `<Select options={[...]}>` entries with a `value` but no usable `label`, which makes the consumer-facing option text blank or ambiguous by contract.',
+              remediation:
+                'Give each inline demo Select option a non-empty `label` so the dropdown text matches the underlying `value` contract.',
+              filesChecked: [filePath],
+              hits: {
+                selects: collectLineHits(source, /<Select\b/),
+                optionObjects: collectLineHits(source, /\{\s*value\s*:\s*["'][^"']+["'][^}]*\}/),
+              },
+              context: {
+                missingLabelSelects: missingLabelContexts.map(({ index, missingLabelOptions, tag }) => ({
+                  selectIndex: index,
+                  missingLabelOptions: missingLabelOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                    raw: option.raw,
+                  })),
+                  tag,
+                })),
+              },
+            },
+          ]),
+    ],
   };
 }
 
@@ -709,6 +756,7 @@ async function auditDemoSource() {
       tabsInitialValueMatchesTrigger: tabsCompositionAudit.checklist.tabsInitialValueMatchesTrigger,
       selectRootPresent: selectOptionAudit.checklist.selectRootPresent,
       selectOptionValuesUnique: selectOptionAudit.checklist.selectOptionValuesUnique,
+      selectOptionLabelsPresent: selectOptionAudit.checklist.selectOptionLabelsPresent,
       sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
       sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
       sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
@@ -757,6 +805,7 @@ async function main() {
       tabsInitialValueMatchesTrigger: false,
       selectRootPresent: false,
       selectOptionValuesUnique: false,
+      selectOptionLabelsPresent: false,
       sidebarItemIdsPresent: false,
       sidebarItemIdsUnique: false,
       sidebarItemTargetsExist: false,
