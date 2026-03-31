@@ -323,6 +323,46 @@ async function runSmoke(browser, demoConsumerSummary) {
     await page.getByText(/free & open source/i).waitFor({ state: 'visible' });
   });
 
+  await step('tabs support keyboard activation in the packaged demo', async () => {
+    const featuresTab = page.getByRole('tab', { name: /^features$/i });
+    await featuresTab.click();
+    await page.getByText(/amazing features/i).waitFor({ state: 'visible' });
+
+    await featuresTab.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'tab' && /pricing/i.test(active.textContent ?? '');
+    });
+    await page.waitForFunction(() => {
+      const pricingTab = Array.from(document.querySelectorAll('[role="tab"]')).find((node) => /pricing/i.test(node.textContent ?? ''));
+      return pricingTab?.getAttribute('aria-selected') === 'true';
+    });
+    await page.getByText(/free & open source/i).waitFor({ state: 'visible' });
+
+    await page.keyboard.press('End');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'tab' && /about/i.test(active.textContent ?? '');
+    });
+    await page.waitForFunction(() => {
+      const aboutTab = Array.from(document.querySelectorAll('[role="tab"]')).find((node) => /about/i.test(node.textContent ?? ''));
+      return aboutTab?.getAttribute('aria-selected') === 'true';
+    });
+    await page.getByText(/about the library/i).waitFor({ state: 'visible' });
+
+    await page.keyboard.press('Home');
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return active?.getAttribute('role') === 'tab' && /features/i.test(active.textContent ?? '');
+    });
+    await page.waitForFunction(() => {
+      const featuresTabNode = Array.from(document.querySelectorAll('[role="tab"]')).find((node) => /features/i.test(node.textContent ?? ''));
+      return featuresTabNode?.getAttribute('aria-selected') === 'true';
+    });
+    await page.getByText(/amazing features/i).waitFor({ state: 'visible' });
+  });
+
   await step('topbar keeps key external actions visible', async () => {
     await page.getByRole('link', { name: /github/i }).waitFor({ state: 'visible' });
     await page.getByRole('link', { name: /get started/i }).waitFor({ state: 'visible' });
