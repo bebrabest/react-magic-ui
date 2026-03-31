@@ -95,6 +95,14 @@ async function runSmoke(browser, demoConsumerSummary) {
     }
   }
 
+  await step('demo consumer contract has no inherited warnings', async () => {
+    const warnings = demoConsumerSummary?.data?.warnings ?? [];
+    if (warnings.length > 0) {
+      const formattedWarnings = warnings.map((warning) => warning.type).join(', ');
+      throw new Error(`demo-consumer validation still reported warning(s): ${formattedWarnings}`);
+    }
+  });
+
   await step('demo renders key shell content', async () => {
     await page.getByRole('heading', { name: /beautiful react components/i }).waitFor({ state: 'visible' });
     await page.getByText(/components/i).first().waitFor({ state: 'visible' });
@@ -146,8 +154,8 @@ async function runSmoke(browser, demoConsumerSummary) {
     });
   } else {
     await step('sidebar collapse toggle works end-to-end', async () => {
-      const sidebar = page.locator('[data-orientation="vertical"]').filter({ has: page.getByRole('button', { name: /^overview$/i }) }).first();
-      const toggle = page.locator('button[aria-label*="collapse" i], button[aria-label*="expand" i]').first();
+      const sidebar = page.locator('aside').filter({ has: page.getByRole('button', { name: /^overview$/i }) }).first();
+      const toggle = page.getByRole('button', { name: /collapse sidebar|expand sidebar/i }).first();
 
       await sidebar.waitFor({ state: 'visible' });
       await toggle.waitFor({ state: 'visible' });
