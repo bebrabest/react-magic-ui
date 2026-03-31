@@ -191,6 +191,61 @@ function auditSwitchAccessibleNames(source, filePath) {
   };
 }
 
+function auditCheckboxAccessibleNames(source, filePath) {
+  const checkboxTagMatches = [...source.matchAll(/<Checkbox(?!\.)\b([\s\S]*?)\/>/g)];
+  if (checkboxTagMatches.length === 0) {
+    return {
+      checklist: {
+        checkboxRootPresent: false,
+        checkboxAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledCheckboxes = checkboxTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const tag = match[0];
+      const hasAccessibleName = /\b(?:aria-label|aria-labelledby|label)\s*=/.test(attrs);
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        checkboxIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      checkboxRootPresent: true,
+      checkboxAccessibleNamesPresent: unlabeledCheckboxes.length === 0,
+    },
+    warnings: unlabeledCheckboxes.length === 0
+      ? []
+      : [{
+          type: 'checkbox-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Checkbox />` examples without a usable accessible name (`label`, `aria-label`, or `aria-labelledby`), so the control can look fine while remaining anonymous to assistive tech by contract.',
+          remediation:
+            'Give each sibling demo `<Checkbox>` a real accessible name via the component `label` prop (preferred) or `aria-label` / `aria-labelledby`, especially for size-demo variants that might otherwise rely only on nearby visual text.',
+          filesChecked: [filePath],
+          hits: {
+            checkboxes: collectLineHits(source, /<Checkbox(?!\.)\b/),
+            checkboxLabels: collectLineHits(source, /\b(?:label|aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledCheckboxes,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -899,6 +954,9 @@ async function auditDemoSource() {
   const switchAccessibleNameAudit = auditSwitchAccessibleNames(appSource, appPath);
   warnings.push(...switchAccessibleNameAudit.warnings);
 
+  const checkboxAccessibleNameAudit = auditCheckboxAccessibleNames(appSource, appPath);
+  warnings.push(...checkboxAccessibleNameAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -1044,6 +1102,8 @@ async function auditDemoSource() {
       sliderHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-slider-without-onchange'),
       checkboxControlledUsage: /<Checkbox\b[^>]*\bchecked\s*=/.test(appSource),
       checkboxHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-checkbox-without-onchange'),
+      checkboxRootPresent: checkboxAccessibleNameAudit.checklist.checkboxRootPresent,
+      checkboxAccessibleNamesPresent: checkboxAccessibleNameAudit.checklist.checkboxAccessibleNamesPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
@@ -1103,6 +1163,8 @@ async function main() {
       sliderHandlerProvided: false,
       checkboxControlledUsage: false,
       checkboxHandlerProvided: false,
+      checkboxRootPresent: false,
+      checkboxAccessibleNamesPresent: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
       switchRootPresent: false,
