@@ -74,7 +74,8 @@ async function auditDemoSource() {
 
   const combinedSource = `${mainSource}\n${appSource}`;
 
-  if (!/import\s+['"]react-magic-ui\/style\.css['"]\s*;?/m.test(combinedSource)) {
+  const styleImportPresent = /import\s+['"]react-magic-ui\/style\.css['"]\s*;?/m.test(combinedSource);
+  if (!styleImportPresent) {
     warnings.push({
       type: 'missing-style-import',
       severity: 'warning',
@@ -83,10 +84,21 @@ async function auditDemoSource() {
     });
   }
 
+  const internalPackagePathMatches = combinedSource.match(/react-magic-ui\/dist\//g) ?? [];
+  if (internalPackagePathMatches.length > 0) {
+    warnings.push({
+      type: 'internal-package-path-import',
+      severity: 'warning',
+      message: 'Demo source still references an internal react-magic-ui/dist/* path instead of the public package contract.',
+      filesChecked: [mainPath, appPath],
+    });
+  }
+
   const sidebarToggleUsed = /<Sidebar\.Toggle\b/.test(appSource);
   const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(appSource);
+  const sidebarToggleRequiresCollapsibleFix = sidebarToggleUsed && !sidebarMarkedCollapsible;
 
-  if (sidebarToggleUsed && !sidebarMarkedCollapsible) {
+  if (sidebarToggleRequiresCollapsibleFix) {
     warnings.push({
       type: 'sidebar-toggle-without-collapsible',
       severity: 'warning',
@@ -97,6 +109,11 @@ async function auditDemoSource() {
 
   return {
     filesChecked: [mainPath, appPath],
+    checklist: {
+      styleImportPresent,
+      internalPackagePathsDetected: internalPackagePathMatches.length > 0,
+      sidebarToggleRequiresCollapsibleFix,
+    },
     warnings,
   };
 }
@@ -109,6 +126,14 @@ async function main() {
     repoRoot,
     demoDir,
     outDir,
+    checklist: {
+      styleImportPresent: false,
+      internalPackagePathsDetected: false,
+      sidebarToggleRequiresCollapsibleFix: false,
+      packedLibraryBuildPassed: false,
+      packedLibraryInstallPassed: false,
+      demoBuildAgainstPackedLibraryPassed: false,
+    },
     steps: [],
     warnings: [],
   };
@@ -139,11 +164,16 @@ async function main() {
     auditDemoSource()
   );
   summary.warnings = sourceAudit.warnings;
+  summary.checklist = {
+    ...summary.checklist,
+    ...sourceAudit.checklist,
+  };
   await fs.writeFile(path.join(outDir, 'demo-source-audit.json'), JSON.stringify(sourceAudit, null, 2));
 
   const buildLibraryResult = await logStep('build library before packing', () =>
     run('npm', ['run', 'build'], { cwd: repoRoot })
   );
+  summary.checklist.packedLibraryBuildPassed = true;
   await fs.writeFile(path.join(outDir, 'library-build.stdout.txt'), buildLibraryResult.stdout);
   await fs.writeFile(path.join(outDir, 'library-build.stderr.txt'), buildLibraryResult.stderr);
 
@@ -159,12 +189,14 @@ async function main() {
   const installResult = await logStep('install packed library into demo app', () =>
     run('npm', ['install', '--no-save', tarballPath], { cwd: demoDir })
   );
+  summary.checklist.packedLibraryInstallPassed = true;
   await fs.writeFile(path.join(outDir, 'demo-install.stdout.txt'), installResult.stdout);
   await fs.writeFile(path.join(outDir, 'demo-install.stderr.txt'), installResult.stderr);
 
   const buildResult = await logStep('build demo app against packed library', () =>
     run('npm', ['run', 'build'], { cwd: demoDir })
   );
+  summary.checklist.demoBuildAgainstPackedLibraryPassed = true;
   await fs.writeFile(path.join(outDir, 'demo-build.stdout.txt'), buildResult.stdout);
   await fs.writeFile(path.join(outDir, 'demo-build.stderr.txt'), buildResult.stderr);
 

@@ -31,7 +31,7 @@ Primary commands from the root:
 5. `npm run lint:fix` only when you intentionally want ESLint to rewrite files
 6. `npm run build` before release-sensitive changes
 7. `npm run build-storybook` when docs/story rendering changes need a full static verification
-8. `npm run test:demo-consumer` when package exports / CSS contract / consumer-facing integration changes need build-level validation against the real demo app; it also writes source-audit warnings for obvious contract mismatches in the sibling demo app
+8. `npm run test:demo-consumer` when package exports / CSS contract / consumer-facing integration changes need build-level validation against the real demo app; it also writes source-audit warnings plus a machine-readable checklist in `summary.json` for obvious contract mismatches in the sibling demo app
 9. `npm run test:demo-browser-smoke` when you want a higher-confidence rendered consumer check against the real demo app after installing the packed tarball; it now also carries demo-consumer source-audit warnings into the browser-smoke summary/output so sibling-demo contract mismatches are visible in the higher-level flow
 
 ## Notes
@@ -41,6 +41,12 @@ Primary commands from the root:
 - Tailwind config now resolves through the single `tailwind.config.ts`
 - some components still do not have tests; see `worklog/AUDIT_TESTS.md`
 - package consumption still has open Tailwind packaging questions; see phase 2 plan items
+
+## Demo sync notes
+
+- the sibling demo contract and review checklist now live in `worklog/DEMO_SYNC_CONTRACT.md`
+- `test:demo-consumer` is the source of truth for build-level demo sync status and writes the machine-readable checklist into its `summary.json`
+- `test:demo-browser-smoke` is the higher-confidence rendered consumer check and carries those warnings forward
 
 ## Recommended follow-up cleanup
 

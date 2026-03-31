@@ -74,6 +74,7 @@ npm run build-storybook
 ```
 
 For the shorter day-to-day workflow, see `worklog/DEV_FLOW.md`.
+For the explicit sibling-demo validation checklist/contract, see `worklog/DEMO_SYNC_CONTRACT.md`.
 
 ## Consumer-facing package rules
 

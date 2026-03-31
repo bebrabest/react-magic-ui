@@ -16,6 +16,7 @@ A React component library for building liquid-glass UI without making consumers 
 - [Storybook docs](https://react-magic-ui-docs.netlify.app/)
 - [Contributing guide](./CONTRIBUTING.md)
 - [Development flow notes](./worklog/DEV_FLOW.md)
+- [Demo sync contract](./worklog/DEMO_SYNC_CONTRACT.md)
 
 ## Quick start
 
@@ -120,7 +121,7 @@ npm run build
 npm run build-storybook
 
 # Validate the real demo app against a packed local tarball
-# (also emits source-audit warnings for consumer contract mismatches)
+# (also emits source-audit warnings plus a machine-readable checklist in summary.json)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball
@@ -129,6 +130,7 @@ npm run test:demo-browser-smoke
 ```
 
 For a shorter contributor workflow note, see [`worklog/DEV_FLOW.md`](./worklog/DEV_FLOW.md).
+For the explicit sibling-demo rules/checklist, see [`worklog/DEMO_SYNC_CONTRACT.md`](./worklog/DEMO_SYNC_CONTRACT.md).
 
 ## Browser support note
 
