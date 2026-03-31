@@ -137,7 +137,8 @@ function unique(values) {
 }
 
 function auditTabsComposition(source, filePath) {
-  const tabsRootPresent = /<Tabs(?!\.)\b/.test(source);
+  const tabsRootTags = findComponentTags(source, 'Tabs');
+  const tabsRootPresent = tabsRootTags.length > 0;
   if (!tabsRootPresent) {
     return {
       checklist: {
@@ -145,6 +146,7 @@ function auditTabsComposition(source, filePath) {
         tabsListRendered: false,
         tabsTriggerValuesUnique: false,
         tabsTriggerContentPairsAligned: false,
+        tabsInitialValueMatchesTrigger: false,
       },
       warnings: [],
     };
@@ -155,9 +157,16 @@ function auditTabsComposition(source, filePath) {
   const duplicateTriggerValues = triggerValues.filter((value, index) => triggerValues.indexOf(value) != index);
   const triggerOnlyValues = unique(triggerValues.filter((value) => !contentValues.includes(value)));
   const contentOnlyValues = unique(contentValues.filter((value) => !triggerValues.includes(value)));
+  const tabsInitialValues = tabsRootTags
+    .flatMap((tag) => [
+      ...collectAttributeValues(tag, /\bvalue\s*=\s*["']([^"']+)["']/g),
+      ...collectAttributeValues(tag, /\bdefaultValue\s*=\s*["']([^"']+)["']/g),
+    ]);
+  const tabsInitialValueMismatches = unique(tabsInitialValues.filter((value) => !triggerValues.includes(value)));
   const tabsListRendered = /<Tabs\.List\b/.test(source);
   const tabsTriggerValuesUnique = duplicateTriggerValues.length === 0;
   const tabsTriggerContentPairsAligned = triggerOnlyValues.length === 0 && contentOnlyValues.length === 0;
+  const tabsInitialValueMatchesTrigger = tabsInitialValueMismatches.length === 0;
   const warnings = [];
 
   if (!tabsListRendered) {
@@ -216,12 +225,34 @@ function auditTabsComposition(source, filePath) {
     });
   }
 
+  if (!tabsInitialValueMatchesTrigger) {
+    warnings.push({
+      type: 'tabs-initial-value-mismatch',
+      severity: 'warning',
+      message:
+        'Demo source gives `<Tabs>` a `value` or `defaultValue` that does not match any `<Tabs.Trigger value="...">`, so the example can boot into a state with no valid selected tab by contract.',
+      remediation:
+        'Keep each demo `<Tabs value>` / `<Tabs defaultValue>` aligned with a real `<Tabs.Trigger value>` so the initial selected tab exists in the composed tab set.',
+      filesChecked: [filePath],
+      hits: {
+        tabsRoots: collectLineHits(source, /<Tabs(?!\.)\b/),
+        triggers: collectLineHits(source, /<Tabs\.Trigger\b/),
+      },
+      context: {
+        tabsInitialValues: unique(tabsInitialValues),
+        triggerValues: unique(triggerValues),
+        tabsInitialValueMismatches,
+      },
+    });
+  }
+
   return {
     checklist: {
       tabsRootPresent: true,
       tabsListRendered,
       tabsTriggerValuesUnique,
       tabsTriggerContentPairsAligned,
+      tabsInitialValueMatchesTrigger,
     },
     warnings,
   };
@@ -675,6 +706,7 @@ async function auditDemoSource() {
       tabsListRendered: tabsCompositionAudit.checklist.tabsListRendered,
       tabsTriggerValuesUnique: tabsCompositionAudit.checklist.tabsTriggerValuesUnique,
       tabsTriggerContentPairsAligned: tabsCompositionAudit.checklist.tabsTriggerContentPairsAligned,
+      tabsInitialValueMatchesTrigger: tabsCompositionAudit.checklist.tabsInitialValueMatchesTrigger,
       selectRootPresent: selectOptionAudit.checklist.selectRootPresent,
       selectOptionValuesUnique: selectOptionAudit.checklist.selectOptionValuesUnique,
       sidebarItemIdsPresent: sidebarNavigationAudit.checklist.sidebarItemIdsPresent,
@@ -722,6 +754,7 @@ async function main() {
       tabsListRendered: false,
       tabsTriggerValuesUnique: false,
       tabsTriggerContentPairsAligned: false,
+      tabsInitialValueMatchesTrigger: false,
       selectRootPresent: false,
       selectOptionValuesUnique: false,
       sidebarItemIdsPresent: false,
