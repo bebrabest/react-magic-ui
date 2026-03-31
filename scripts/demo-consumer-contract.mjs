@@ -136,6 +136,61 @@ function unique(values) {
   return [...new Set(values)];
 }
 
+function auditSwitchAccessibleNames(source, filePath) {
+  const switchTagMatches = [...source.matchAll(/<Switch(?!\.)\b([\s\S]*?)\/>/g)];
+  if (switchTagMatches.length === 0) {
+    return {
+      checklist: {
+        switchRootPresent: false,
+        switchAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledSwitches = switchTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const tag = match[0];
+      const hasAccessibleName = /\b(?:aria-label|aria-labelledby|label)\s*=/.test(attrs);
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        switchIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      switchRootPresent: true,
+      switchAccessibleNamesPresent: unlabeledSwitches.length === 0,
+    },
+    warnings: unlabeledSwitches.length === 0
+      ? []
+      : [{
+          type: 'switch-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Switch />` examples without a usable accessible name (`label`, `aria-label`, or `aria-labelledby`), so the control can look fine while remaining anonymous to assistive tech by contract.',
+          remediation:
+            'Give each sibling demo `<Switch>` a real accessible name via the component `label` prop (preferred) or `aria-label` / `aria-labelledby`, especially for size-demo variants that otherwise only have nearby visual text.',
+          filesChecked: [filePath],
+          hits: {
+            switches: collectLineHits(source, /<Switch(?!\.)\b/),
+            switchLabels: collectLineHits(source, /\b(?:label|aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledSwitches,
+          },
+        }],
+  };
+}
+
 function auditTabsComposition(source, filePath) {
   const tabsRootTags = findComponentTags(source, 'Tabs');
   const tabsRootPresent = tabsRootTags.length > 0;
@@ -841,6 +896,9 @@ async function auditDemoSource() {
   const selectOptionAudit = auditSelectOptionValues(appSource, appPath);
   warnings.push(...selectOptionAudit.warnings);
 
+  const switchAccessibleNameAudit = auditSwitchAccessibleNames(appSource, appPath);
+  warnings.push(...switchAccessibleNameAudit.warnings);
+
   const sidebarNavigationAudit = auditSidebarNavigation(appSource, appPath);
   warnings.push(...sidebarNavigationAudit.warnings);
 
@@ -988,6 +1046,8 @@ async function auditDemoSource() {
       checkboxHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-checkbox-without-onchange'),
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
+      switchRootPresent: switchAccessibleNameAudit.checklist.switchRootPresent,
+      switchAccessibleNamesPresent: switchAccessibleNameAudit.checklist.switchAccessibleNamesPresent,
       tabsControlledUsage: /<Tabs\b[^>]*\bvalue\s*=/.test(appSource),
       tabsHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-tabs-without-onvaluechange'),
       tabsRootPresent: tabsCompositionAudit.checklist.tabsRootPresent,
@@ -1045,6 +1105,8 @@ async function main() {
       checkboxHandlerProvided: false,
       switchControlledUsage: false,
       switchHandlerProvided: false,
+      switchRootPresent: false,
+      switchAccessibleNamesPresent: false,
       tabsControlledUsage: false,
       tabsHandlerProvided: false,
       tabsRootPresent: false,
