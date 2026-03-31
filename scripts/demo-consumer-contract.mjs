@@ -187,6 +187,25 @@ async function auditDemoSource() {
     });
   }
 
+  const toastHookImported = /\buseToast\b/.test(combinedSource);
+  const toastProviderRendered = /<ToastProvider\b/.test(appSource);
+  if (toastHookImported && !toastProviderRendered) {
+    warnings.push({
+      type: 'toast-hook-without-provider',
+      severity: 'warning',
+      message: 'Demo source uses `useToast` but does not render a surrounding <ToastProvider>, so toast interactions will fail at runtime by contract.',
+      remediation: 'Wrap the relevant demo tree in `<ToastProvider>` when using `useToast`, or remove the hook usage from the sibling demo.',
+      filesChecked: [mainPath, appPath],
+      hits: {
+        toastHook: [
+          ...collectLineHits(mainSource, /\buseToast\b/),
+          ...collectLineHits(appSource, /\buseToast\b/),
+        ],
+        toastProvider: collectLineHits(appSource, /<ToastProvider\b/),
+      },
+    });
+  }
+
   const sidebarToggleUsed = /<Sidebar\.Toggle\b/.test(appSource);
   const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(appSource);
   const sidebarToggleRequiresCollapsibleFix = sidebarToggleUsed && !sidebarMarkedCollapsible;
@@ -247,6 +266,8 @@ async function auditDemoSource() {
     checklist: {
       styleImportPresent,
       internalPackagePathsDetected: internalPackagePathMatches.length > 0,
+      toastHookImported,
+      toastProviderRendered,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -269,6 +290,8 @@ async function main() {
     checklist: {
       styleImportPresent: false,
       internalPackagePathsDetected: false,
+      toastHookImported: false,
+      toastProviderRendered: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
