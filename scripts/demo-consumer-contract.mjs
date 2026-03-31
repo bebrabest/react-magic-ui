@@ -128,6 +128,105 @@ function hasProp(tag, propName) {
   return new RegExp(`\\b${propName}\\s*=`).test(tag);
 }
 
+function collectAttributeValues(source, pattern) {
+  return [...source.matchAll(pattern)].map((match) => match[1]).filter(Boolean);
+}
+
+function unique(values) {
+  return [...new Set(values)];
+}
+
+function auditTabsComposition(source, filePath) {
+  const tabsRootPresent = /<Tabs(?!\.)\b/.test(source);
+  if (!tabsRootPresent) {
+    return {
+      checklist: {
+        tabsRootPresent: false,
+        tabsListRendered: false,
+        tabsTriggerValuesUnique: false,
+        tabsTriggerContentPairsAligned: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const triggerValues = collectAttributeValues(source, /<Tabs\.Trigger\b[^>]*\bvalue\s*=\s*["']([^"']+)["']/g);
+  const contentValues = collectAttributeValues(source, /<Tabs\.Content\b[^>]*\bvalue\s*=\s*["']([^"']+)["']/g);
+  const duplicateTriggerValues = triggerValues.filter((value, index) => triggerValues.indexOf(value) != index);
+  const triggerOnlyValues = unique(triggerValues.filter((value) => !contentValues.includes(value)));
+  const contentOnlyValues = unique(contentValues.filter((value) => !triggerValues.includes(value)));
+  const tabsListRendered = /<Tabs\.List\b/.test(source);
+  const tabsTriggerValuesUnique = duplicateTriggerValues.length === 0;
+  const tabsTriggerContentPairsAligned = triggerOnlyValues.length === 0 && contentOnlyValues.length === 0;
+  const warnings = [];
+
+  if (!tabsListRendered) {
+    warnings.push({
+      type: 'tabs-without-list',
+      severity: 'warning',
+      message:
+        'Demo source renders `<Tabs>` without `<Tabs.List>`, which makes the composed tab navigation contract incomplete and harder to use/access as intended.',
+      remediation:
+        "Render a `<Tabs.List>` wrapper around the demo's `<Tabs.Trigger>` elements so the composed tabs structure matches the library contract.",
+      filesChecked: [filePath],
+      hits: {
+        tabsRoots: collectLineHits(source, /<Tabs(?!\.)\b/),
+        tabsLists: collectLineHits(source, /<Tabs\.List\b/),
+      },
+    });
+  }
+
+  if (!tabsTriggerValuesUnique) {
+    warnings.push({
+      type: 'tabs-duplicate-trigger-values',
+      severity: 'warning',
+      message:
+        'Demo source renders duplicate `<Tabs.Trigger value="...">` values, which makes tab selection/state ambiguous by contract.',
+      remediation:
+        'Give each `<Tabs.Trigger>` in the sibling demo a unique `value` so selection and matching `<Tabs.Content>` panels stay unambiguous.',
+      filesChecked: [filePath],
+      hits: {
+        triggers: collectLineHits(source, /<Tabs\.Trigger\b/),
+      },
+      context: {
+        duplicateTriggerValues: unique(duplicateTriggerValues),
+      },
+    });
+  }
+
+  if (!tabsTriggerContentPairsAligned) {
+    warnings.push({
+      type: 'tabs-trigger-content-value-mismatch',
+      severity: 'warning',
+      message:
+        'Demo source has `<Tabs.Trigger>` / `<Tabs.Content>` value mismatches, so some tabs will not reveal the intended panel (or some panels can never be selected) by contract.',
+      remediation:
+        "Keep the sibling demo's `<Tabs.Trigger value>` and `<Tabs.Content value>` sets aligned so every trigger has exactly one matching panel and vice versa.",
+      filesChecked: [filePath],
+      hits: {
+        triggers: collectLineHits(source, /<Tabs\.Trigger\b/),
+        contents: collectLineHits(source, /<Tabs\.Content\b/),
+      },
+      context: {
+        triggerValues: unique(triggerValues),
+        contentValues: unique(contentValues),
+        triggerOnlyValues,
+        contentOnlyValues,
+      },
+    });
+  }
+
+  return {
+    checklist: {
+      tabsRootPresent: true,
+      tabsListRendered,
+      tabsTriggerValuesUnique,
+      tabsTriggerContentPairsAligned,
+    },
+    warnings,
+  };
+}
+
 function auditControlledComponentUsage({
   source,
   componentName,
@@ -278,6 +377,9 @@ async function auditDemoSource() {
     });
   }
 
+  const tabsCompositionAudit = auditTabsComposition(appSource, appPath);
+  warnings.push(...tabsCompositionAudit.warnings);
+
   const controlledComponentAudits = [
     auditControlledComponentUsage({
       source: appSource,
@@ -421,6 +523,10 @@ async function auditDemoSource() {
       switchHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-switch-without-setisactive'),
       tabsControlledUsage: /<Tabs\b[^>]*\bvalue\s*=/.test(appSource),
       tabsHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-tabs-without-onvaluechange'),
+      tabsRootPresent: tabsCompositionAudit.checklist.tabsRootPresent,
+      tabsListRendered: tabsCompositionAudit.checklist.tabsListRendered,
+      tabsTriggerValuesUnique: tabsCompositionAudit.checklist.tabsTriggerValuesUnique,
+      tabsTriggerContentPairsAligned: tabsCompositionAudit.checklist.tabsTriggerContentPairsAligned,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -459,6 +565,10 @@ async function main() {
       switchHandlerProvided: false,
       tabsControlledUsage: false,
       tabsHandlerProvided: false,
+      tabsRootPresent: false,
+      tabsListRendered: false,
+      tabsTriggerValuesUnique: false,
+      tabsTriggerContentPairsAligned: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
