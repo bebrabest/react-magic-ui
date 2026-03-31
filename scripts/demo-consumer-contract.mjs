@@ -590,6 +590,67 @@ function auditCardContent(source, filePath) {
   };
 }
 
+function auditGlassContent(source, filePath) {
+  const glassTagMatches = [...source.matchAll(/<Glass(?!\.)\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Glass>)/g)];
+  if (glassTagMatches.length === 0) {
+    return {
+      checklist: {
+        glassRootPresent: false,
+        glassContentPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const emptyGlassBlocks = glassTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const children = (match[2] ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\{[^}]+\}/g, ' token ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const tag = match[0];
+      const hasContent = /\b(?:aria-label|aria-labelledby)\s*=/.test(attrs) || children.length > 0;
+
+      if (hasContent) {
+        return null;
+      }
+
+      return {
+        glassIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      glassRootPresent: true,
+      glassContentPresent: emptyGlassBlocks.length === 0,
+    },
+    warnings: emptyGlassBlocks.length === 0
+      ? []
+      : [{
+          type: 'glass-missing-content',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Glass>` examples without visible child content or an accessible label, so the visual shell can look present while communicating nothing meaningful to users or assistive tech.',
+          remediation:
+            'Give each sibling demo `<Glass>` visible content when possible, or at minimum provide `aria-label` / `aria-labelledby` if a Glass wrapper is intentionally decorative or icon-only.',
+          filesChecked: [filePath],
+          hits: {
+            glass: collectLineHits(source, /<Glass(?!\.)\b/),
+            glassLabels: collectLineHits(source, /\b(?:aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            emptyGlassBlocks,
+          },
+        }],
+  };
+}
+
 function auditTopbarContent(source, filePath) {
   const topbarTags = findComponentTags(source, 'Topbar');
   if (topbarTags.length === 0) {
@@ -1380,6 +1441,9 @@ async function auditDemoSource() {
   const cardContentAudit = auditCardContent(appSource, appPath);
   warnings.push(...cardContentAudit.warnings);
 
+  const glassContentAudit = auditGlassContent(appSource, appPath);
+  warnings.push(...glassContentAudit.warnings);
+
   const topbarContentAudit = auditTopbarContent(appSource, appPath);
   warnings.push(...topbarContentAudit.warnings);
 
@@ -1542,6 +1606,8 @@ async function auditDemoSource() {
       badgeContentPresent: badgeContentAudit.checklist.badgeContentPresent,
       cardRootPresent: cardContentAudit.checklist.cardRootPresent,
       cardContentPresent: cardContentAudit.checklist.cardContentPresent,
+      glassRootPresent: glassContentAudit.checklist.glassRootPresent,
+      glassContentPresent: glassContentAudit.checklist.glassContentPresent,
       topbarRootPresent: topbarContentAudit.checklist.topbarRootPresent,
       topbarContentPresent: topbarContentAudit.checklist.topbarContentPresent,
       switchControlledUsage: /<Switch\b[^>]*\bisActive\s*=/.test(appSource),
@@ -1616,6 +1682,8 @@ async function main() {
       badgeContentPresent: false,
       cardRootPresent: false,
       cardContentPresent: false,
+      glassRootPresent: false,
+      glassContentPresent: false,
       topbarRootPresent: false,
       topbarContentPresent: false,
       switchControlledUsage: false,

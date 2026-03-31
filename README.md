@@ -125,7 +125,7 @@ npm run build-storybook
 # with remediation + line-hit context when the audit can locate the mismatch; current checks cover stylesheet import,
 # internal package-path usage, ToastProvider/useToast pairing, controlled Modal dismiss wiring plus modal accessible name/description checks,
 # controlled form/component usage without matching handlers (`Input`, `Select`, `Slider`, `Checkbox`, `Switch`, `Tabs`), plus Input/Select/Checkbox/Switch/Slider/Button accessible-name coverage
-# (`label`, `aria-label`, or `aria-labelledby` for Input/Select/Checkbox/Switch; visible text children, `text`, `aria-label`, or `aria-labelledby` for Button; visible text children or `aria-label` / `aria-labelledby` for Badge; visible child content or `aria-label` / `aria-labelledby` for Card; visible brand/title content or an accessible name for Topbar),
+# (`label`, `aria-label`, or `aria-labelledby` for Input/Select/Checkbox/Switch; visible text children, `text`, `aria-label`, or `aria-labelledby` for Button; visible text children or `aria-label` / `aria-labelledby` for Badge; visible child content or `aria-label` / `aria-labelledby` for Card and Glass; visible brand/title content or an accessible name for Topbar),
 # Tabs composition integrity (`Tabs.List`, unique trigger values, trigger/content value alignment, valid initial value/defaultValue),
 # duplicate inline Select option values, missing inline Select option labels, Sidebar item-id integrity (unique itemIds + real matching section ids),
 # Sidebar initial activeItemId alignment, inline Sidebar click-target alignment, Sidebar item accessible names (including collapsed-nav safety),
