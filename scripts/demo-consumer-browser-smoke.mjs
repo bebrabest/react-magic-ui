@@ -424,11 +424,18 @@ async function main() {
     await fs.writeFile(path.join(outDir, 'playwright-log.txt'), pwLogs.join('\n') + '\n');
     await fs.writeFile(path.join(outDir, 'preview-log.txt'), previewLogs.join(''));
 
+    const demoConsumerChecklist = demoConsumerSummary?.data?.checklist ?? null;
     const browserSummary = {
       outDir,
       previewUrl,
       demoConsumerSummaryPath: demoConsumerSummary?.path ?? null,
+      demoConsumerChecklist,
       demoConsumerWarnings: demoConsumerSummary?.data?.warnings ?? [],
+      contractStatus: {
+        demoConsumerPassed: Boolean(demoConsumerSummary),
+        demoConsumerHasWarnings: (demoConsumerSummary?.data?.warnings?.length ?? 0) > 0,
+        browserSmokePassed: !results.some((result) => result.status === 'failed'),
+      },
       results,
     };
     await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(browserSummary, null, 2));

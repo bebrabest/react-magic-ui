@@ -125,7 +125,7 @@ npm run build-storybook
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball
-# (also copies through any demo-consumer source-audit warnings into the browser-smoke summary/output)
+# (also carries the demo-consumer checklist + source-audit warnings into the browser-smoke summary/output)
 npm run test:demo-browser-smoke
 ```
 
