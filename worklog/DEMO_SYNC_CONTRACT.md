@@ -22,6 +22,11 @@ This repo now treats demo sync as an explicit contract instead of an informal "r
 
 - `sidebar-toggle-without-collapsible`: the sibling demo renders `<Sidebar.Toggle />` without marking the surrounding `<Sidebar>` as `collapsible`, so the toggle cannot be asserted end-to-end yet
 
+Browser smoke now treats this mismatch explicitly:
+
+- if the warning is present, the sidebar-collapse step is recorded as `skipped`
+- if the warning disappears, browser smoke automatically upgrades to a real collapse/expand assertion against the packaged demo
+
 ## Validation commands
 
 ### Build-level consumer validation

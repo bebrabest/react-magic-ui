@@ -65,7 +65,7 @@ async function expectTextIncludes(locator, expectedText) {
   }
 }
 
-async function runSmoke(browser) {
+async function runSmoke(browser, demoConsumerSummary) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1100 },
     deviceScaleFactor: 1,
@@ -80,6 +80,9 @@ async function runSmoke(browser) {
   await page.waitForLoadState('networkidle').catch(() => {});
 
   const results = [];
+  const sidebarToggleRequiresCollapsibleFix = Boolean(
+    demoConsumerSummary?.data?.checklist?.sidebarToggleRequiresCollapsibleFix
+  );
 
   async function step(name, fn) {
     try {
@@ -134,6 +137,57 @@ async function runSmoke(browser) {
       return button?.getAttribute('aria-current') === 'page';
     });
   });
+
+  if (sidebarToggleRequiresCollapsibleFix) {
+    results.push({
+      name: 'sidebar collapse toggle works end-to-end',
+      status: 'skipped',
+      reason: 'demo-consumer source audit reported sidebar-toggle-without-collapsible',
+    });
+  } else {
+    await step('sidebar collapse toggle works end-to-end', async () => {
+      const sidebar = page.locator('[data-orientation="vertical"]').filter({ has: page.getByRole('button', { name: /^overview$/i }) }).first();
+      const toggle = page.locator('button[aria-label*="collapse" i], button[aria-label*="expand" i]').first();
+
+      await sidebar.waitFor({ state: 'visible' });
+      await toggle.waitFor({ state: 'visible' });
+
+      const before = await sidebar.boundingBox();
+      if (!before) {
+        throw new Error('could not measure sidebar before collapse');
+      }
+
+      await toggle.click();
+      await page.waitForFunction(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.some((button) => /expand sidebar/i.test(button.getAttribute('aria-label') ?? ''));
+      });
+
+      const afterCollapse = await sidebar.boundingBox();
+      if (!afterCollapse) {
+        throw new Error('could not measure sidebar after collapse');
+      }
+
+      if (!(afterCollapse.width < before.width)) {
+        throw new Error(`sidebar width did not shrink after collapse (before=${before.width}, after=${afterCollapse.width})`);
+      }
+
+      await toggle.click();
+      await page.waitForFunction(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons.some((button) => /collapse sidebar/i.test(button.getAttribute('aria-label') ?? ''));
+      });
+
+      const afterExpand = await sidebar.boundingBox();
+      if (!afterExpand) {
+        throw new Error('could not measure sidebar after expand');
+      }
+
+      if (!(afterExpand.width > afterCollapse.width)) {
+        throw new Error(`sidebar width did not grow after re-expand (collapsed=${afterCollapse.width}, expanded=${afterExpand.width})`);
+      }
+    });
+  }
 
   await step('select updates chosen value in the demo', async () => {
     const combobox = page.locator('#inputs').getByRole('combobox').first();
@@ -417,7 +471,7 @@ async function main() {
       args: ['--no-sandbox', '--disable-dev-shm-usage'],
     });
 
-    const { page, results, pwLogs } = await runSmoke(browser);
+    const { page, results, pwLogs } = await runSmoke(browser, demoConsumerSummary);
 
     await page.screenshot({ path: path.join(outDir, 'final-state.png'), fullPage: true });
     await fs.writeFile(path.join(outDir, 'results.json'), JSON.stringify(results, null, 2));
