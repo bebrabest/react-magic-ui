@@ -246,6 +246,61 @@ function auditCheckboxAccessibleNames(source, filePath) {
   };
 }
 
+function auditInputAccessibleNames(source, filePath) {
+  const inputTagMatches = [...source.matchAll(/<Input(?!\.)\b([\s\S]*?)\/>/g)];
+  if (inputTagMatches.length === 0) {
+    return {
+      checklist: {
+        inputRootPresent: false,
+        inputAccessibleNamesPresent: false,
+      },
+      warnings: [],
+    };
+  }
+
+  const unlabeledInputs = inputTagMatches
+    .map((match, index) => {
+      const attrs = match[1] ?? '';
+      const tag = match[0];
+      const hasAccessibleName = /\b(?:label|aria-label|aria-labelledby)\s*=/.test(attrs);
+
+      if (hasAccessibleName) {
+        return null;
+      }
+
+      return {
+        inputIndex: index,
+        tag,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    checklist: {
+      inputRootPresent: true,
+      inputAccessibleNamesPresent: unlabeledInputs.length === 0,
+    },
+    warnings: unlabeledInputs.length === 0
+      ? []
+      : [{
+          type: 'input-missing-accessible-name',
+          severity: 'warning',
+          message:
+            'Demo source renders one or more `<Input />` examples without a usable accessible name (`label`, `aria-label`, or `aria-labelledby`), so the field can look fine while remaining semantically anonymous because placeholder text is not a real label.',
+          remediation:
+            'Give each sibling demo `<Input>` a real accessible name via the component `label` prop (preferred) or `aria-label` / `aria-labelledby`, instead of relying on placeholder text alone.',
+          filesChecked: [filePath],
+          hits: {
+            inputs: collectLineHits(source, /<Input(?!\.)\b/),
+            inputLabels: collectLineHits(source, /\b(?:label|aria-label|aria-labelledby)\s*=/),
+          },
+          context: {
+            unlabeledInputs,
+          },
+        }],
+  };
+}
+
 function auditButtonAccessibleNames(source, filePath) {
   const buttonTagMatches = [...source.matchAll(/<Button(?!\.)\b([\s\S]*?)(?:\/>|>([\s\S]*?)<\/Button>)/g)];
   if (buttonTagMatches.length === 0) {
@@ -1018,6 +1073,9 @@ async function auditDemoSource() {
   const checkboxAccessibleNameAudit = auditCheckboxAccessibleNames(appSource, appPath);
   warnings.push(...checkboxAccessibleNameAudit.warnings);
 
+  const inputAccessibleNameAudit = auditInputAccessibleNames(appSource, appPath);
+  warnings.push(...inputAccessibleNameAudit.warnings);
+
   const buttonAccessibleNameAudit = auditButtonAccessibleNames(appSource, appPath);
   warnings.push(...buttonAccessibleNameAudit.warnings);
 
@@ -1160,6 +1218,8 @@ async function auditDemoSource() {
       modalAccessibleDescriptionProvided: modalAccessibilityAudit.checklist.modalAccessibleDescriptionProvided,
       inputControlledUsage: /<Input\b[^>]*\bvalue\s*=/.test(appSource),
       inputHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-input-without-onchange'),
+      inputRootPresent: inputAccessibleNameAudit.checklist.inputRootPresent,
+      inputAccessibleNamesPresent: inputAccessibleNameAudit.checklist.inputAccessibleNamesPresent,
       selectControlledUsage: /<Select\b[^>]*\bvalue\s*=/.test(appSource),
       selectHandlerProvided: !controlledComponentAudits.some((audit) => audit.warning.type === 'controlled-select-without-onchange'),
       sliderControlledUsage: /<Slider\b[^>]*\bvalue\s*=/.test(appSource),
@@ -1223,6 +1283,8 @@ async function main() {
       modalAccessibleDescriptionProvided: false,
       inputControlledUsage: false,
       inputHandlerProvided: false,
+      inputRootPresent: false,
+      inputAccessibleNamesPresent: false,
       selectControlledUsage: false,
       selectHandlerProvided: false,
       sliderControlledUsage: false,
