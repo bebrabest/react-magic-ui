@@ -121,7 +121,8 @@ npm run build
 npm run build-storybook
 
 # Validate the real demo app against a packed local tarball
-# (also emits source-audit warnings plus a machine-readable checklist + contractStatus in summary.json)
+# (also emits source-audit warnings plus a machine-readable checklist + contractStatus in summary.json,
+# with remediation + line-hit context when the audit can locate the mismatch)
 npm run test:demo-consumer
 
 # Validate the real demo app in a browser after installing the packed tarball

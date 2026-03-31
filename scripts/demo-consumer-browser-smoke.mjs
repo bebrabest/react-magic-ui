@@ -503,6 +503,7 @@ async function main() {
         demoConsumerHasWarnings: warningCount > 0,
         browserSmokePassed: failedCount === 0,
         warningCount,
+        warningTypes: demoConsumerSummary?.data?.warnings?.map((warning) => warning.type) ?? [],
         skippedCount,
         failedCount,
       },
@@ -525,6 +526,9 @@ async function main() {
       );
       for (const warning of browserSummary.demoConsumerWarnings) {
         console.warn(`- [${warning.type}] ${warning.message}`);
+        if (warning.remediation) {
+          console.warn(`  fix: ${warning.remediation}`);
+        }
       }
     }
   } finally {

@@ -51,7 +51,7 @@ Output folder:
 Key artifacts:
 
 - `summary.json`
-- `demo-source-audit.json`
+- `demo-source-audit.json` - includes warning `type`, `message`, `remediation`, and line-hit context for contract mismatches when detectable
 - `library-build.*.txt`
 - `pack.*.txt`
 - `demo-install.*.txt`
@@ -71,7 +71,7 @@ Output folder:
 
 Key artifacts:
 
-- `summary.json` (includes inherited `demoConsumerChecklist`, `demoConsumerWarnings`, and a top-level `contractStatus` snapshot with explicit `overall`, warning, skip, and failure counts)
+- `summary.json` (includes inherited `demoConsumerChecklist`, `demoConsumerWarnings`, and a top-level `contractStatus` snapshot with explicit `overall`, warning types, skip, and failure counts)
 - `results.json`
 - `final-state.png`
 - `playwright-log.txt`

@@ -53,6 +53,17 @@ async function run(command, args, { cwd = repoRoot, env = process.env } = {}) {
   });
 }
 
+function collectLineHits(source, pattern) {
+  return source
+    .split(/\r?\n/)
+    .map((line, index) => ({ lineNumber: index + 1, line }))
+    .filter(({ line }) => pattern.test(line))
+    .map(({ lineNumber, line }) => ({
+      lineNumber,
+      line: line.trim(),
+    }));
+}
+
 async function auditDemoSource() {
   const appPath = path.join(demoDir, 'src', 'App.tsx');
   const mainPath = path.join(demoDir, 'src', 'main.tsx');
@@ -80,6 +91,7 @@ async function auditDemoSource() {
       type: 'missing-style-import',
       severity: 'warning',
       message: 'Demo app does not explicitly import react-magic-ui/style.css from src/main.tsx or src/App.tsx.',
+      remediation: 'Add `import "react-magic-ui/style.css"` to the demo entrypoint so the packaged library CSS contract matches real consumer usage.',
       filesChecked: [mainPath, appPath],
     });
   }
@@ -90,7 +102,12 @@ async function auditDemoSource() {
       type: 'internal-package-path-import',
       severity: 'warning',
       message: 'Demo source still references an internal react-magic-ui/dist/* path instead of the public package contract.',
+      remediation: 'Replace internal `react-magic-ui/dist/*` imports with the public package entrypoints (`react-magic-ui` and `react-magic-ui/style.css`).',
       filesChecked: [mainPath, appPath],
+      hits: [
+        ...collectLineHits(mainSource, /react-magic-ui\/dist\//),
+        ...collectLineHits(appSource, /react-magic-ui\/dist\//),
+      ],
     });
   }
 
@@ -103,7 +120,12 @@ async function auditDemoSource() {
       type: 'sidebar-toggle-without-collapsible',
       severity: 'warning',
       message: 'Demo renders <Sidebar.Toggle /> but the surrounding <Sidebar> is not marked collapsible, so the toggle will render null by contract.',
+      remediation: 'Mark the surrounding `<Sidebar>` as `collapsible` (or remove `<Sidebar.Toggle />`) in the sibling demo before expecting collapse behavior in packaged-demo browser smoke.',
       filesChecked: [appPath],
+      hits: {
+        toggle: collectLineHits(appSource, /<Sidebar\.Toggle\b/),
+        sidebarRoots: collectLineHits(appSource, /<Sidebar\b/),
+      },
     });
   }
 
@@ -112,6 +134,8 @@ async function auditDemoSource() {
     checklist: {
       styleImportPresent,
       internalPackagePathsDetected: internalPackagePathMatches.length > 0,
+      sidebarTogglePresent: sidebarToggleUsed,
+      sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarToggleRequiresCollapsibleFix,
     },
     warnings,
@@ -139,6 +163,7 @@ async function main() {
     contractStatus: {
       overall: 'pending',
       warningCount: 0,
+      warningTypes: [],
       failedStepCount: 0,
       allStepsPassed: false,
     },
@@ -212,6 +237,7 @@ async function main() {
   summary.contractStatus = {
     overall: summary.warnings.length > 0 ? 'passed-with-warnings' : 'passed',
     warningCount: summary.warnings.length,
+    warningTypes: summary.warnings.map((warning) => warning.type),
     failedStepCount: summary.steps.filter((step) => step.status === 'failed').length,
     allStepsPassed: summary.steps.every((step) => step.status === 'passed'),
   };
@@ -223,6 +249,9 @@ async function main() {
     console.warn(`demo consumer source audit emitted ${summary.warnings.length} warning(s)`);
     for (const warning of summary.warnings) {
       console.warn(`- [${warning.type}] ${warning.message}`);
+      if (warning.remediation) {
+        console.warn(`  fix: ${warning.remediation}`);
+      }
     }
   }
 }
