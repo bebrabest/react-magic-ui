@@ -427,6 +427,24 @@ function auditSidebarNavigation(source, filePath) {
     attrs: match[1] ?? '',
     children: match[2] ?? '',
   }));
+  const sidebarClickTargetMismatches = sidebarItemTags
+    .map(({ tag, attrs }, index) => {
+      const itemId = attrs.match(/\bitemId\s*=\s*["']([^"']+)["']/)?.[1] ?? null;
+      const clickTarget = attrs.match(/\bonClick\s*=\s*\{\s*\(\)\s*=>\s*handleSidebarChange\(\s*["']([^"']+)["']\s*\)\s*\}/)?.[1] ?? null;
+
+      if (!itemId || !clickTarget || itemId === clickTarget) {
+        return null;
+      }
+
+      return {
+        sidebarItemIndex: index,
+        itemId,
+        clickTarget,
+        tag,
+      };
+    })
+    .filter(Boolean);
+  const sidebarOnClickTargetsMatchItemIds = sidebarClickTargetMismatches.length === 0;
   const sidebarItemsMissingAccessibleNames = sidebarItemTags.filter(({ attrs, children }) => {
     const hasAriaLabel = /\baria-label\s*=/.test(attrs);
     const childText = children
@@ -447,6 +465,7 @@ function auditSidebarNavigation(source, filePath) {
       sidebarItemIdsUnique,
       sidebarItemTargetsExist,
       sidebarActiveItemIdsMatchItems,
+      sidebarOnClickTargetsMatchItemIds,
       sidebarItemAccessibleNamesPresent,
       sidebarCollapsedItemAccessibleNamesPresent,
     },
@@ -489,6 +508,26 @@ function auditSidebarNavigation(source, filePath) {
                 missingSectionTargets,
                 sidebarItemIds,
                 sectionIds,
+              },
+            },
+          ]
+        : []),
+      ...(!sidebarOnClickTargetsMatchItemIds
+        ? [
+            {
+              type: 'sidebar-item-click-target-mismatch',
+              severity: 'warning',
+              message:
+                'Demo source renders one or more `<Sidebar.Item itemId="...">` entries whose inline `handleSidebarChange(...)` click target does not match the same item id, so the sidebar can highlight one section while scrolling to another by contract.',
+              remediation:
+                'Keep each inline `Sidebar.Item onClick={() => handleSidebarChange(...)}` target aligned with that item\'s own `itemId` so active-state tracking and scroll navigation point at the same section.',
+              filesChecked: [filePath],
+              hits: {
+                sidebarItems: collectLineHits(source, /<Sidebar\.Item\b/),
+                clickHandlers: collectLineHits(source, /handleSidebarChange\(\s*["'][^"']+["']\s*\)/),
+              },
+              context: {
+                sidebarClickTargetMismatches,
               },
             },
           ]
@@ -963,6 +1002,7 @@ async function auditDemoSource() {
       sidebarItemIdsUnique: sidebarNavigationAudit.checklist.sidebarItemIdsUnique,
       sidebarItemTargetsExist: sidebarNavigationAudit.checklist.sidebarItemTargetsExist,
       sidebarActiveItemIdsMatchItems: sidebarNavigationAudit.checklist.sidebarActiveItemIdsMatchItems,
+      sidebarOnClickTargetsMatchItemIds: sidebarNavigationAudit.checklist.sidebarOnClickTargetsMatchItemIds,
       sidebarItemAccessibleNamesPresent: sidebarNavigationAudit.checklist.sidebarItemAccessibleNamesPresent,
       sidebarCollapsedItemAccessibleNamesPresent:
         sidebarNavigationAudit.checklist.sidebarCollapsedItemAccessibleNamesPresent,
@@ -1019,6 +1059,7 @@ async function main() {
       sidebarItemIdsUnique: false,
       sidebarItemTargetsExist: false,
       sidebarActiveItemIdsMatchItems: false,
+      sidebarOnClickTargetsMatchItemIds: false,
       sidebarItemAccessibleNamesPresent: false,
       sidebarCollapsedItemAccessibleNamesPresent: false,
       sidebarRootWidthOverrideDetected: false,
