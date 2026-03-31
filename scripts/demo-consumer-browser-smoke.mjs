@@ -269,6 +269,45 @@ async function runSmoke(browser, demoConsumerSummary) {
     }
   });
 
+  await step('select supports Home and End keyboard jumps without losing panel alignment', async () => {
+    const combobox = page.locator('#inputs').getByRole('combobox').first();
+    const listbox = page.getByRole('listbox');
+
+    await combobox.focus();
+    await page.keyboard.press('ArrowDown');
+    await listbox.waitFor({ state: 'visible' });
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+
+    await page.waitForFunction(() => {
+      const active = document.querySelector('#inputs [role="combobox"]');
+      const text = active?.textContent?.trim() ?? '';
+      return /svelte/i.test(text);
+    });
+
+    const endValue = (await combobox.textContent())?.trim() ?? null;
+    if (!endValue || !/svelte/i.test(endValue)) {
+      throw new Error(`select did not jump to the last option after End (value=${JSON.stringify(endValue)})`);
+    }
+
+    await combobox.focus();
+    await page.keyboard.press('ArrowDown');
+    await listbox.waitFor({ state: 'visible' });
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Enter');
+
+    await page.waitForFunction(() => {
+      const active = document.querySelector('#inputs [role="combobox"]');
+      const text = active?.textContent?.trim() ?? '';
+      return /react/i.test(text);
+    });
+
+    const homeValue = (await combobox.textContent())?.trim() ?? null;
+    if (!homeValue || !/react/i.test(homeValue)) {
+      throw new Error(`select did not jump back to the first option after Home (value=${JSON.stringify(homeValue)})`);
+    }
+  });
+
   await step('switch and checkbox toggle with keyboard', async () => {
     const smallSwitch = page.getByRole('switch').first();
     await smallSwitch.focus();

@@ -66,6 +66,32 @@ describe("Select component", () => {
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
+  it("supports Home and End keyboard jumps before selection", () => {
+    const onChange = vi.fn();
+
+    render(
+      <Select options={options} value="lviv" onChange={onChange} placeholder="Pick a city" />,
+    );
+
+    const combobox = screen.getByRole("combobox", { name: /lviv/i });
+
+    fireEvent.keyDown(combobox, { key: "ArrowDown" });
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    fireEvent.keyDown(combobox, { key: "End" });
+    fireEvent.keyDown(combobox, { key: "Enter" });
+    expect(onChange).toHaveBeenCalledWith("odesa");
+
+    onChange.mockClear();
+
+    fireEvent.keyDown(combobox, { key: "ArrowDown" });
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    fireEvent.keyDown(combobox, { key: "Home" });
+    fireEvent.keyDown(combobox, { key: "Enter" });
+    expect(onChange).toHaveBeenCalledWith("kyiv");
+  });
+
   it("exposes the selected option through option semantics when open", () => {
     render(<Select options={options} value="lviv" />);
 
