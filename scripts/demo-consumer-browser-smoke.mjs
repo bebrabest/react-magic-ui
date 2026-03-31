@@ -329,20 +329,29 @@ async function runSmoke(browser, demoConsumerSummary) {
     await page.getByText(/^v(?:\d+|1\.x\.x)/i).waitFor({ state: 'visible' });
   });
 
-  await step('toast variants expose the expected live-region semantics and can be cleared', async () => {
+  await step('toast variants expose live-region semantics, keyboard dismiss, and clear-all behavior', async () => {
     await page.getByRole('button', { name: /^success$/i }).click();
     const successToast = page.getByRole('status');
     await successToast.waitFor({ state: 'visible' });
     await expectTextIncludes(successToast, 'Success!');
+
+    await successToast.focus();
+    await page.keyboard.press('Escape');
+    await successToast.waitFor({ state: 'hidden' });
 
     await page.getByRole('button', { name: /^error$/i }).click();
     const errorToast = page.getByRole('alert');
     await errorToast.waitFor({ state: 'visible' });
     await expectTextIncludes(errorToast, 'Error');
 
+    await page.getByRole('button', { name: /^info$/i }).click();
+    const infoToast = page.getByRole('status').filter({ hasText: 'Information' });
+    await infoToast.waitFor({ state: 'visible' });
+    await expectTextIncludes(infoToast, 'Information');
+
     await page.getByRole('button', { name: /clear all/i }).click();
-    await successToast.waitFor({ state: 'hidden' });
     await errorToast.waitFor({ state: 'hidden' });
+    await infoToast.waitFor({ state: 'hidden' });
   });
 
   await step('select and input keep their consumer-controlled values together', async () => {
