@@ -29,6 +29,7 @@ The demo source audit is intentionally opinionated about a few high-signal consu
 - `missing-style-import` - the demo must import `react-magic-ui/style.css`
 - `internal-package-path-import` - the demo must not depend on `react-magic-ui/dist/*` internals
 - `toast-hook-without-provider` - if the demo uses `useToast`, it must actually render a surrounding `<ToastProvider>`
+- `controlled-modal-without-dismiss-handler` - if the demo controls `<Modal open={...}>`, it must also pass `onOpenChange` or `onClose` so built-in dismiss interactions can actually close the dialog
 - `sidebar-toggle-without-collapsible` - if the demo renders `<Sidebar.Toggle />`, the surrounding `<Sidebar>` must actually be `collapsible`
 - `sidebar-root-width-override` - a collapsible sidebar should not also force width via `rootClassName`, because width utilities can silently override the component's own expanded/collapsed contract
 

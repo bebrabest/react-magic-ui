@@ -206,6 +206,23 @@ async function auditDemoSource() {
     });
   }
 
+  const controlledModalUsage = /<Modal\b[^>]*\bopen\s*=/.test(appSource);
+  const modalDismissHandlerProvided = /<Modal\b[^>]*\b(?:onOpenChange|onClose)\s*=/.test(appSource);
+  if (controlledModalUsage && !modalDismissHandlerProvided) {
+    warnings.push({
+      type: 'controlled-modal-without-dismiss-handler',
+      severity: 'warning',
+      message: 'Demo source renders a controlled `<Modal open={...}>` without `onOpenChange` or `onClose`, so overlay/escape/close-button interactions cannot drive state back down by contract.',
+      remediation: 'When the sibling demo controls `<Modal open={...}>`, also pass `onOpenChange` (preferred) or `onClose` so dismiss interactions can actually close the dialog.',
+      filesChecked: [appPath],
+      hits: {
+        modal: collectLineHits(appSource, /<Modal\b/),
+        onOpenChange: collectLineHits(appSource, /\bonOpenChange\s*=/),
+        onClose: collectLineHits(appSource, /\bonClose\s*=/),
+      },
+    });
+  }
+
   const sidebarToggleUsed = /<Sidebar\.Toggle\b/.test(appSource);
   const sidebarMarkedCollapsible = /<Sidebar\b[^>]*\bcollapsible(?:=|\s|>)/s.test(appSource);
   const sidebarToggleRequiresCollapsibleFix = sidebarToggleUsed && !sidebarMarkedCollapsible;
@@ -268,6 +285,8 @@ async function auditDemoSource() {
       internalPackagePathsDetected: internalPackagePathMatches.length > 0,
       toastHookImported,
       toastProviderRendered,
+      controlledModalUsage,
+      modalDismissHandlerProvided,
       sidebarTogglePresent: sidebarToggleUsed,
       sidebarCollapsibleEnabled: sidebarMarkedCollapsible,
       sidebarRootWidthOverrideDetected: Boolean(sidebarWidthOverrideRisk),
@@ -292,6 +311,8 @@ async function main() {
       internalPackagePathsDetected: false,
       toastHookImported: false,
       toastProviderRendered: false,
+      controlledModalUsage: false,
+      modalDismissHandlerProvided: false,
       sidebarRootWidthOverrideDetected: false,
       sidebarToggleRequiresCollapsibleFix: false,
       packedLibraryBuildPassed: false,
